@@ -96,21 +96,22 @@ const LEVELS = [
         flag: {x: 1050, y: 650}            // Flag is now on the far right ground
     },
     { // Level 3
-       playerStart: {x: 50, y: 100},
+        playerStart: {x: 50, y: 100},
         platforms: [
-            {x:0, y:750, w:1200, h:50},    // Ground floor completely open from left to right
-            {x:0, y:250, w:300, h:30},     // High left platform
-            {x:100, y:550, w:300, h:30},    // Mid left platform
+            {x:0, y:750, w:1200, h:50},    // Ground floor completely wide open
+            {x:0, y:250, w:300, h:30},     // Starting high platform
+            {x:100, y:550, w:300, h:30},    // Mid left step
             {x:400, y:400, w:300, h:30},    // Center platform
             
-            // THE PILLAR: Sits on the floor but leaves the sky completely wide open
-            {x:750, y:430, w:50, h:320}     
+            // THE HANGING WALL: Starts at the sky (y:0) and hangs down 530px deep.
+            // It completely blocks the top path but leaves a 220px high passage on the ground.
+            {x:750, y:0, w:60, h:530}     
         ],
         enemies: [
-            {x:200, y:650, minX:50, maxX:700},   // Enemy walks freely on the left ground floor
-            {x:450, y:300, minX:400, maxX:650}   // Patrols the center platform
+            {x:850, y:650, minX:820, maxX:1100}, // Enemy patrolling the area past the hanging wall
+            {x:450, y:300, minX:400, maxX:650}   // Enemy patrolling the center high platform
         ],
-        flag: {x: 1050, y: 650} // On the right ground floor
+        flag: {x: 1050, y: 650}
     },
     { // Level 4
         playerStart: {x: 100, y: 600},
