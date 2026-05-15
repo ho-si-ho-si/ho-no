@@ -70,7 +70,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const V_WIDTH = 1200;  // Wider world for bigger sprites
 const V_HEIGHT = 800;  // Taller world
-const gravity = 0.8;
+const gravity = 0.7;
 let currentLevel = 0;
 let gameState = 'PLAY';
 
@@ -198,7 +198,7 @@ function resize() {
 
 function setupInputs() {
     const bL = document.getElementById('btnLeft'), bR = document.getElementById('btnRight'), bJ = document.getElementById('btnJump');
-    const handleJump = (e) => { e.preventDefault(); if(player.grounded) player.vy = -18; };
+    const handleJump = (e) => { e.preventDefault(); if(player.grounded) player.vy = -22; };
     
     bL.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
     bL.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
