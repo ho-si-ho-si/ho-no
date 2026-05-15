@@ -77,24 +77,23 @@ let gameState = 'PLAY';
 const keys = { left: false, right: false };
 
 // --- LEVEL DATA ---
-// --- LEVEL DATA ---
 const LEVELS = [
-    { // Level 1
+    { // Level 1 (Tweak: Enemy moved to the ground under the platform)
         playerStart: {x: 100, y: 600},
         platforms: [{x:0, y:750, w:1200, h:50}, {x:400, y:550, w:300, h:30}],
-        enemies: [{x:450, y:450, minX:400, maxX:650}],
+        enemies: [{x:500, y:650, minX:400, maxX:700}], // Now patrols the ground floor
         flag: {x: 1050, y: 650}
     },
-    { // Level 2 (FIXED: Staircase design for natural vertical progression)
+    { // Level 2 (Tweak: Swapped Enemy and Flag positions)
         playerStart: {x: 50, y: 600},
         platforms: [
-            {x:0, y:750, w:350, h:50},     // Left ground floor
-            {x:550, y:750, w:650, h:50},   // Right ground floor
-            {x:200, y:620, w:200, h:30},   // Step 1 (Easy vertical reach from ground)
-            {x:450, y:480, w:200, h:30}    // Step 2 (Easy vertical reach from Step 1)
+            {x:0, y:750, w:350, h:50},     
+            {x:550, y:750, w:650, h:50},   
+            {x:200, y:620, w:200, h:30},   
+            {x:450, y:480, w:200, h:30}    
         ],
-        enemies: [{x:650, y:650, minX:550, maxX:1100}],
-        flag: {x: 520, y: 380}             // Flag sits safely on top of Step 2
+        enemies: [{x:460, y:380, minX:450, maxX:650}], // Enemy is now up on Step 2
+        flag: {x: 1050, y: 650}            // Flag is now on the far right ground
     },
     { // Level 3
         playerStart: {x: 50, y: 100},
@@ -108,10 +107,21 @@ const LEVELS = [
         enemies: [{x:950, y:200, minX:900, maxX:1150}],
         flag: {x: 1100, y: 200}
     },
-    { // Level 5
+    { // Level 5 (FIXED: Cut a passage through the wall, guarded by an enemy)
         playerStart: {x: 50, y: 650},
-        platforms: [{x:0, y:750, w:1200, h:50}, {x:300, y:150, w:50, h:600}, {x:700, y:0, w:50, h:600}],
-        enemies: [{x:400, y:650, minX:350, maxX:650}, {x:800, y:650, minX:750, maxX:1100}],
+        platforms: [
+            {x:0, y:750, w:1200, h:50}, 
+            // Wall 1: Split into a lower wall and an upper wall to leave a gap at y:500-650
+            {x:300, y:150, w:50, h:350},  // Top half of wall 1
+            {x:300, y:650, w:50, h:100},  // Bottom half of wall 1
+            // Wall 2: Split to leave a matching gap
+            {x:700, y:0, w:50, h:500},    // Top half of wall 2
+            {x:700, y:650, w:50, h:100}   // Bottom half of wall 2
+        ],
+        enemies: [
+            {x:450, y:650, minX:360, maxX:690}, // Guarding the courtyard between walls
+            {x:850, y:650, minX:760, maxX:1100} // Guarding the final flag approach
+        ],
         flag: {x: 1050, y: 650}
     }
 ];
@@ -198,22 +208,38 @@ function resize() {
 
 function setupInputs() {
     const bL = document.getElementById('btnLeft'), bR = document.getElementById('btnRight'), bJ = document.getElementById('btnJump');
-    const handleJump = (e) => { e.preventDefault(); if(player.grounded) player.vy = -22; };
     
+    // --- LEFT BUTTON ---
     bL.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
     bL.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
+    bL.addEventListener('mousedown', () => { keys.left = true; });
+    bL.addEventListener('mouseup', () => { keys.left = false; });
+    bL.addEventListener('mouseleave', () => { keys.left = false; }); // Stops stuck moving if mouse drifts off button
+
+    // --- RIGHT BUTTON ---
     bR.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
     bR.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
-    bJ.addEventListener('touchstart', handleJump);
+    bR.addEventListener('mousedown', () => { keys.right = true; });
+    bR.addEventListener('mouseup', () => { keys.right = false; });
+    bR.addEventListener('mouseleave', () => { keys.right = false; });
 
+    // --- JUMP BUTTON ---
+    const triggerJump = (e) => { 
+        if(e) e.preventDefault(); 
+        if(player.grounded) player.vy = -22; 
+    };
+    bJ.addEventListener('touchstart', triggerJump);
+    bJ.addEventListener('mousedown', triggerJump);
+
+    // --- KEYBOARD CONTROLS (BACKUP) ---
     window.addEventListener('keydown', e => {
-        if(e.key === 'ArrowLeft') keys.left = true;
-        if(e.key === 'ArrowRight') keys.right = true;
-        if(e.key === ' ' || e.key === 'ArrowUp') if(player.grounded) player.vy = -18;
+        if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+        if(e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+        if(e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') if(player.grounded) player.vy = -22;
     });
     window.addEventListener('keyup', e => {
-        if(e.key === 'ArrowLeft') keys.left = false;
-        if(e.key === 'ArrowRight') keys.right = false;
+        if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+        if(e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
     });
 }
 
