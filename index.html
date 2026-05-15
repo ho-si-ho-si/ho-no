@@ -77,32 +77,38 @@ let gameState = 'PLAY';
 const keys = { left: false, right: false };
 
 // --- LEVEL DATA ---
+// --- LEVEL DATA ---
 const LEVELS = [
-    { 
+    { // Level 1
         playerStart: {x: 100, y: 600},
         platforms: [{x:0, y:750, w:1200, h:50}, {x:400, y:550, w:300, h:30}],
         enemies: [{x:450, y:450, minX:400, maxX:650}],
         flag: {x: 1050, y: 650}
     },
-    { 
+    { // Level 2 (FIXED: Staircase design for natural vertical progression)
         playerStart: {x: 50, y: 600},
-        platforms: [{x:0, y:750, w:400, h:50}, {x:500, y:750, w:700, h:50}, {x:200, y:500, w:200, h:30}, {x:600, y:350, w:200, h:30}],
-        enemies: [{x:600, y:650, minX:550, maxX:1100}],
-        flag: {x: 650, y: 250}
+        platforms: [
+            {x:0, y:750, w:350, h:50},     // Left ground floor
+            {x:550, y:750, w:650, h:50},   // Right ground floor
+            {x:200, y:620, w:200, h:30},   // Step 1 (Easy vertical reach from ground)
+            {x:450, y:480, w:200, h:30}    // Step 2 (Easy vertical reach from Step 1)
+        ],
+        enemies: [{x:650, y:650, minX:550, maxX:1100}],
+        flag: {x: 520, y: 380}             // Flag sits safely on top of Step 2
     },
-    { 
+    { // Level 3
         playerStart: {x: 50, y: 100},
         platforms: [{x:0, y:250, w:300, h:30}, {x:400, y:400, w:300, h:30}, {x:100, y:550, w:300, h:30}, {x:0, y:750, w:1200, h:50}],
-        enemies: [{x:200, y:650, minX:50, maxX:1100}, {x:450, y:300, minX:400, maxX:650}],
+        enemies: [{x:200, y:650, minX:550, maxX:1100}, {x:450, y:300, minX:400, maxX:650}],
         flag: {x: 1000, y: 650}
     },
-    { 
+    { // Level 4
         playerStart: {x: 100, y: 600},
         platforms: [{x:0, y:750, w:200, h:50}, {x:300, y:600, w:200, h:30}, {x:600, y:450, w:200, h:30}, {x:900, y:300, w:300, h:30}],
         enemies: [{x:950, y:200, minX:900, maxX:1150}],
         flag: {x: 1100, y: 200}
     },
-    { 
+    { // Level 5
         playerStart: {x: 50, y: 650},
         platforms: [{x:0, y:750, w:1200, h:50}, {x:300, y:150, w:50, h:600}, {x:700, y:0, w:50, h:600}],
         enemies: [{x:400, y:650, minX:350, maxX:650}, {x:800, y:650, minX:750, maxX:1100}],
