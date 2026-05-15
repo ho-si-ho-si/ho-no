@@ -97,9 +97,18 @@ const LEVELS = [
     },
     { // Level 3
         playerStart: {x: 50, y: 100},
-        platforms: [{x:0, y:250, w:300, h:30}, {x:400, y:400, w:300, h:30}, {x:100, y:550, w:300, h:30}, {x:0, y:750, w:1200, h:50}],
-        enemies: [{x:200, y:650, minX:550, maxX:1100}, {x:450, y:300, minX:400, maxX:650}],
-        flag: {x: 1000, y: 650}
+        platforms: [
+            {x:0, y:750, w:1200, h:50},    // Ground floor
+            {x:0, y:250, w:300, h:30},     // High left platform
+            {x:100, y:550, w:300, h:30},    // Mid left platform
+            {x:400, y:400, w:300, h:30},    // Center stepping stone
+            {x:850, y:300, w:50, h:450}     // THE WALL: Blocks the flag. Must jump over from center stone!
+        ],
+        enemies: [
+            {x:200, y:650, minX:50, maxX:800},   // Patrols the main ground floor
+            {x:450, y:300, minX:400, maxX:650}   // Patrols the center stepping stone
+        ],
+        flag: {x: 1050, y: 650} // Safely tucked behind the wall
     },
     { // Level 4
         playerStart: {x: 100, y: 600},
