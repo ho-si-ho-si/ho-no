@@ -223,13 +223,34 @@ function resize() {
 
 function setupInputs() {
     const bL = document.getElementById('btnLeft'), bR = document.getElementById('btnRight'), bJ = document.getElementById('btnJump');
+    const music = document.getElementById('bgMusic');
     
+    // --- FOOLPROOF AUDIO KICKSTART ---
+    // The very split-second the user clicks or taps ANYWHERE on the screen, force-start the music
+    const kickstartAudio = () => {
+        if (!audioStarted) {
+            music.volume = 0.4; // 40% volume
+            music.play()
+                .then(() => {
+                    audioStarted = true;
+                    // Remove listeners once successfully playing so they don't waste CPU
+                    window.removeEventListener('click', kickstartAudio);
+                    window.removeEventListener('touchstart', kickstartAudio);
+                    window.removeEventListener('keydown', kickstartAudio);
+                })
+                .catch(err => console.log("Audio play deferred:", err));
+        }
+    };
+    window.addEventListener('click', kickstartAudio);
+    window.addEventListener('touchstart', kickstartAudio);
+    window.addEventListener('keydown', kickstartAudio);
+
     // --- LEFT BUTTON ---
     bL.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
     bL.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
     bL.addEventListener('mousedown', () => { keys.left = true; });
     bL.addEventListener('mouseup', () => { keys.left = false; });
-    bL.addEventListener('mouseleave', () => { keys.left = false; }); // Stops stuck moving if mouse drifts off button
+    bL.addEventListener('mouseleave', () => { keys.left = false; });
 
     // --- RIGHT BUTTON ---
     bR.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
@@ -246,7 +267,7 @@ function setupInputs() {
     bJ.addEventListener('touchstart', triggerJump);
     bJ.addEventListener('mousedown', triggerJump);
 
-    // --- KEYBOARD CONTROLS (BACKUP) ---
+    // --- KEYBOARD CONTROLS ---
     window.addEventListener('keydown', e => {
         if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
         if(e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
