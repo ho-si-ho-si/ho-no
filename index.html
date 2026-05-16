@@ -435,10 +435,10 @@ class Enemy {
                 }
 
                 if (!this.isDead) {
-                    let crownW = this.w * 0.6;
-                    let crownH = 40;
+                    let crownW = this.w * 0.55;
+                    let crownH = crownW * 0.45;
                     let crownX = this.x + (this.w - crownW) / 2;
-                    let crownY = this.y - 30;
+                    let crownY = this.y - (crownH * 0.65);
 
                     if (images.bossCrown && images.bossCrown.complete && images.bossCrown.width > 0) {
                         ctx.drawImage(images.bossCrown, crownX, crownY, crownW, crownH);
@@ -462,8 +462,8 @@ class Enemy {
                 ctx.save();
                 ctx.translate(this.crownX, this.crownY);
                 ctx.rotate(this.crownAngle);
-                let cW = this.initialW * 0.6;
-                let cH = 40;
+                let cW = this.initialW * 0.55;
+                let cH = cW * 0.45;
                 if (images.bossCrown && images.bossCrown.complete && images.bossCrown.width > 0) {
                     ctx.drawImage(images.bossCrown, -cW/2, -cH/2, cW, cH);
                 } else {
@@ -688,7 +688,7 @@ function loop() {
                         if (e.hp <= 0) {
                             e.isDead = true;
                             e.crownX = e.x + e.w / 2;
-                            e.crownY = e.y - 10;
+                            e.crownY = e.y;
                         }
                     } else {
                         player.reset(LEVELS[currentLevel].playerStart.x, LEVELS[currentLevel].playerStart.y);
