@@ -47,6 +47,12 @@ const CHARACTERS = {
         flag: "flag.png",
         victoryText: "HO SI! VEDERE C!"
     },
+    char3: {
+        name: "CALIENDO",
+        player: "player3.png",
+        flag: "flag3.png",
+        victoryText: "VOGLIO 100 NUMERI!"
+    },
     char2: {
         name: "SKUNKSPRAY",
         player: "player2.png", 
@@ -82,8 +88,9 @@ let audioStarted = false;
 let animationTimer = 0;
 
 const selectButtons = [
-    { id: 'char1', x: 250, y: 250, w: 250, h: 400 },
-    { id: 'char2', x: 700, y: 250, w: 250, h: 400 }
+    { id: 'char1', x: 100, y: 250, w: 250, h: 400 },
+    { id: 'char3', x: 475, y: 250, w: 250, h: 400 },
+    { id: 'char2', x: 850, y: 250, w: 250, h: 400 }
 ];
 
 const levelSelectButtons = [];
@@ -118,8 +125,8 @@ function formatTime(ms) {
 
 function preloadSelectionImages(callback) {
     let loaded = 0;
-    const keys = ['char1', 'char2'];
-    const paths = [CHARACTERS.char1.player, CHARACTERS.char2.player];
+    const keys = ['char1', 'char3', 'char2'];
+    const paths = [CHARACTERS.char1.player, CHARACTERS.char3.player, CHARACTERS.char2.player];
     let done = false;
     
     const checkDone = () => {
@@ -164,13 +171,13 @@ const gravity = 0.8;
 const keys = { left: false, right: false };
 
 const LEVELS = [
-    { // Level 1
+    { 
         playerStart: {x: 100, y: 600},
         platforms: [{x:0, y:750, w:1200, h:50}, {x:400, y:550, w:300, h:30}],
         enemies: [{type: 'patrol', x:500, y:650, minX:400, maxX:700}], 
         flag: {x: 1050, y: 650}
     },
-    { // Level 2
+    { 
         playerStart: {x: 50, y: 600},
         platforms: [
             {x:0, y:750, w:350, h:50},     
@@ -181,7 +188,7 @@ const LEVELS = [
         enemies: [{type: 'patrol', x:460, y:380, minX:450, maxX:650}], 
         flag: {x: 1050, y: 650}            
     },
-    { // Level 3
+    { 
         playerStart: {x: 50, y: 100},
         platforms: [
             {x:0, y:750, w:1200, h:50},    
@@ -196,13 +203,13 @@ const LEVELS = [
         ],
         flag: {x: 1050, y: 650} 
     },
-    { // Level 4
+    { 
         playerStart: {x: 100, y: 600},
         platforms: [{x:0, y:750, w:200, h:50}, {x:300, y:600, w:200, h:30}, {x:600, y:450, w:200, h:30}, {x:900, y:300, w:300, h:30}],
         enemies: [{type: 'patrol', x:950, y:200, minX:900, maxX:1150}],
         flag: {x: 1100, y: 200}
     },
-    { // Level 5
+    { 
         playerStart: {x: 50, y: 650},
         platforms: [
             {x:0, y:750, w:1200, h:50}, 
@@ -217,7 +224,7 @@ const LEVELS = [
         ],
         flag: {x: 1050, y: 650}
     },
-    { // Level 6
+    { 
         playerStart: {x: 50, y: 650},
         platforms: [{x: 0, y: 750, w: 1200, h: 50}, {x: 400, y: 550, w: 400, h: 30}],
         enemies: [
@@ -226,7 +233,7 @@ const LEVELS = [
         ],
         flag: {x: 1100, y: 650}
     },
-    { // Level 7
+    { 
         playerStart: {x: 50, y: 650},
         platforms: [
             {x: 0, y: 750, w: 250, h: 50},
@@ -240,7 +247,7 @@ const LEVELS = [
         ],
         flag: {x: 1080, y: 250}
     },
-    { // Level 8
+    { 
         playerStart: {x: 1050, y: 650},
         platforms: [
             {x: 0, y: 750, w: 1200, h: 50},    
@@ -256,7 +263,7 @@ const LEVELS = [
         ],
         flag: {x: 80, y: 110} 
     },
-    { // Level 9
+    { 
         playerStart: {x: 80, y: 140},
         platforms: [
             {x: 0, y: 750, w: 1200, h: 50},
@@ -273,7 +280,7 @@ const LEVELS = [
         ],
         flag: {x: 1080, y: 650}
     },
-    { // Level 10
+    { 
         playerStart: {x: 100, y: 650},
         platforms: [
             {x: 0, y: 750, w: 1200, h: 50},
@@ -672,9 +679,6 @@ function drawSelectionScreen() {
     ctx.fillText('SCONFIGGI I SARCHIAPONI!', V_WIDTH / 2, 120);
 
     selectButtons.forEach((btn, index) => {
-        const rotationDirection = index === 0 ? 1 : -1;
-        const angle = Math.sin(animationTimer) * 0.12 * rotationDirection; 
-
         ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 4;
@@ -686,13 +690,25 @@ function drawSelectionScreen() {
 
         ctx.save();
         ctx.translate(btn.x + btn.w / 2, btn.y + btn.h / 2);
-        ctx.rotate(angle);
+        
+        if (btn.id === 'char3') {
+            const spinAngle = animationTimer * 2;
+            const pulseScale = 1 + Math.sin(animationTimer) * 0.15;
+            ctx.rotate(spinAngle);
+            ctx.scale(pulseScale, pulseScale);
+        } else {
+            const rotationDirection = index === 0 ? 1 : -1;
+            const angle = Math.sin(animationTimer) * 0.12 * rotationDirection; 
+            ctx.rotate(angle);
+        }
         
         const img = uiImages[btn.id];
         if (img && img.complete && img.width > 0) {
             ctx.drawImage(img, -90, -150, 180, 300);
         } else {
-            ctx.fillStyle = index === 0 ? '#FF5733' : '#3399FF';
+            if (btn.id === 'char1') ctx.fillStyle = '#FF5733';
+            else if (btn.id === '#char3') ctx.fillStyle = '#2ECC71';
+            else ctx.fillStyle = '#3399FF';
             ctx.fillRect(-60, -100, 120, 200);
         }
         ctx.restore();
