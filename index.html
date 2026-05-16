@@ -332,21 +332,18 @@ async function openLeaderboard() {
         let processedPlayerName = "";
         let characterUsed = "";
 
-        // Try structured metadata first (playername:X|character:Y)
         if (entry.metadata && entry.metadata.includes("playername:") && entry.metadata.includes("|character:")) {
             const sepIdx = entry.metadata.indexOf("|character:");
             processedPlayerName = entry.metadata.slice("playername:".length, sepIdx).trim();
             characterUsed = entry.metadata.slice(sepIdx + "|character:".length).trim();
         }
 
-        // Fallback chain: player profile name → member_id → ANONIMO
         if (!processedPlayerName) {
             if (entry.player && entry.player.name) processedPlayerName = entry.player.name;
             else if (entry.member_id) processedPlayerName = String(entry.member_id);
             else processedPlayerName = "ANONIMO";
         }
 
-        // Generate descriptive column entry showing name and character if available
         let fullDisplayHtml = escHtml(processedPlayerName);
         if (characterUsed) {
             fullDisplayHtml += ` <span style="font-size: 13px; color: #aaa; margin-left: 8px;">(${escHtml(characterUsed)})</span>`;
@@ -379,7 +376,6 @@ async function submitScore() {
     localStorage.setItem("ll_last_name", name);
 
     statusEl.textContent = "Inviando...";
-    // Passes user name, time, and active character name down to submission pipeline
     const result = await llSubmitScore(name, pendingScoreMs, activeCharName);
 
     if (result && result.success !== false) {
@@ -450,13 +446,12 @@ let gameState    = 'SELECT';
 let audioStarted = false;
 let animationTimer = 0;
 
-// Griglia 2x3 aggiornata per la selezione personaggi
 const selectButtons = [
-    // Riga 1
+    
     { id: 'char1', x: 100, y: 160, w: 250, h: 260 },
     { id: 'char3', x: 475, y: 160, w: 250, h: 260 },
     { id: 'char2', x: 850, y: 160, w: 250, h: 260 },
-    // Riga 2
+    
     { id: 'char4', x: 100, y: 460, w: 250, h: 260 },
     { id: 'char5', x: 475, y: 460, w: 250, h: 260 },
     { id: 'char6', x: 850, y: 460, w: 250, h: 260 }
@@ -695,7 +690,6 @@ function handleSelectionClick(canvasX,canvasY){
             if(canvasX>=btn.x&&canvasX<=btn.x+btn.w&&canvasY>=btn.y&&canvasY<=btn.y+btn.h){
                 let targetId = btn.id;
                 
-                // Gestione della scelta casuale per char5
                 if(targetId === 'char5'){
                     const pool = ['char1', 'char3', 'char2'];
                     targetId = pool[Math.floor(Math.random() * pool.length)];
@@ -775,13 +769,10 @@ function drawSelectionScreen(){
         ctx.save(); 
         ctx.translate(btn.x+btn.w/2,btn.y+btn.h/2);
         
-        // Assegnazione delle animazioni secondo le specifiche richieste
         if(btn.id==='char3' || btn.id==='char5'){ 
-            // 2° e 5° (Random) ereditano la pulsazione scalata
             const ps=1+Math.sin(animationTimer)*0.15; 
             ctx.scale(ps,ps); 
         } else { 
-            // 1°, 3°, 4° e 6° oscillano con la rotazione
             const rd=(btn.id==='char1' || btn.id==='char4') ? 1 : -1; 
             ctx.rotate(Math.sin(animationTimer)*0.12*rd); 
         }
@@ -826,7 +817,10 @@ function loop(timestamp){
         fireballs=fireballs.filter(fb=>{
             let active=fb.update(dt); fb.draw();
             let dX=Math.abs(fb.x-(player.x+player.w/2)), dY=Math.abs(fb.y-(player.y+player.h/2));
-            if(dX<(player.w/2+fb.r)&&dY<(player.h/2+fb.r)) player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
+            if(dX<(player.w/2+fb.r)&&dY<(player.h/2+fb.r)) {
+                player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
+                return false; // This removes the fireball from the array after hitting the player
+            }
             return active;
         });
         enemies.forEach(e=>{
