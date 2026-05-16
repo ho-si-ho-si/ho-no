@@ -579,12 +579,27 @@ function resize() {
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
 }
 
+let audioUnlocked = false;
+
 function startAudio() {
     if (!audioStarted) {
         const music = document.getElementById('bgMusic');
         music.volume = 0.4; 
-        music.play().catch(err => console.log("Audio deferred:", err));
-        audioStarted = true;
+        
+        music.loop = true;
+
+        music.addEventListener('ended', function() {
+            this.currentTime = 0;
+            this.play().catch(err => console.log("Loop failed:", err));
+        }, false);
+
+        music.play()
+            .then(() => {
+                audioStarted = true;
+            })
+            .catch(err => {
+                console.log("Audio waiting for stronger user gesture:", err);
+            });
     }
 }
 
