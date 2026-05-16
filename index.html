@@ -674,6 +674,7 @@ function handleSelectionClick(canvasX,canvasY){
             if(canvasX>=btn.x&&canvasX<=btn.x+btn.w&&canvasY>=btn.y&&canvasY<=btn.y+btn.h){
                 ASSETS.player=CHARACTERS[btn.id].player;
                 ASSETS.flag=CHARACTERS[btn.id].flag;
+                ASSETS.flagGrey=CHARACTERS[btn.id].flagGrey;
                 activeVictoryText=CHARACTERS[btn.id].victoryText;
                 activeCharName=CHARACTERS[btn.id].name;
                 activeCharPlayer=CHARACTERS[btn.id].player;
