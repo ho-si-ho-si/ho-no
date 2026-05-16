@@ -53,7 +53,10 @@ let topScores = [];
 function initLootLocker() {
     fetch(`${LOOTLOCKER_BASE_URL}/v1/player/auth/guest`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "is-staging": "true"
+        },
         body: JSON.stringify({ game_key: LOOTLOCKER_GAME_KEY })
     })
     .then(res => {
@@ -64,10 +67,12 @@ function initLootLocker() {
         if (data.session_token) {
             lootLockerSession = data.session_token;
             playerLootLockerId = data.player_id;
-            console.log("LootLocker Session Started. Player ID:", playerLootLockerId);
+            console.log("LootLocker Session Started! Player ID:", playerLootLockerId);
             
             fetchActivePlayers();
             fetchLeaderboard();
+        } else {
+            console.error("LootLocker authentication payload failed:", data);
         }
     })
     .catch(err => console.error("Network error executing LootLocker login:", err));
