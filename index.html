@@ -459,7 +459,7 @@ class Enemy {
                 
                     let crownX = this.x + (this.w - crownW) / 2;
                 
-                    let crownY = this.y - crownH;
+                    let crownY = this.y - crownH + (crownH * 0.35);
                 
                     if (images.bossCrown && images.bossCrown.complete && images.bossCrown.width > 0) {
                         ctx.drawImage(images.bossCrown, crownX, crownY, crownW, crownH);
