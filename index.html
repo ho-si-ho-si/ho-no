@@ -308,11 +308,15 @@ async function llGetLeaderboard(count = 15) {
 }
 
 async function llFetchPlayerCount() {
+    const ok = await llStartGuestSession();
+    if (!ok) return null;
+
     try {
         const res = await fetch(`${LOOTLOCKER_API}/v1/player/count`, {
             headers: {
                 "x-game-key": LOOTLOCKER_GAME_KEY,
-                "x-game-version": "1.0.0"
+                "x-game-version": "1.0.0",
+                "x-session-token": llSessionToken
             }
         });
         const data = await res.json();
