@@ -15,6 +15,7 @@
         .btn:active { background-color: rgba(255, 255, 255, 0.5); }
         #ui { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; display: none; }
 
+        /* ── Overlay panels ── */
         .overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -28,6 +29,7 @@
         }
         .overlay.hidden { display: none; }
 
+        /* Leaderboard panel */
         #leaderboardOverlay h2 {
             color: #f1c40f;
             font-size: 36px;
@@ -37,8 +39,8 @@
             font-family: sans-serif;
         }
         #lbTable {
-            width: 520px;
-            max-width: 95vw;
+            width: 640px;
+            max-width: 98vw;
             border-collapse: collapse;
         }
         #lbTable th {
@@ -83,6 +85,7 @@
         .lb-close-btn:hover { background: #ffe066; }
         #lbStatus { color: #aaa; font-size: 15px; margin-bottom: 10px; }
 
+        /* Submit score panel */
         #submitOverlay h2 {
             color: #f1c40f;
             font-size: 34px;
@@ -128,6 +131,7 @@
         .submit-btn.secondary:hover { background: #444; }
         #submitStatus { color: #aaa; font-size: 15px; margin-top: 12px; min-height: 22px; }
 
+        /* Live player count badge */
         #playerCountBadge {
             position: absolute;
             top: 14px;
@@ -157,6 +161,7 @@
             50% { opacity: 0.3; }
         }
 
+        /* Leaderboard button on SELECT / LEVEL_SELECT screens */
         #lbOpenBtn {
             position: absolute;
             bottom: 22px;
@@ -187,28 +192,32 @@
     
     <audio id="bgMusic" loop src="skunkorlicorice.mp3"></audio>
 
+    <!-- Live player count -->
     <div id="playerCountBadge"><span class="dot"></span><span id="playerCountText">? online</span></div>
 
-    <button id="lbOpenBtn" onclick="openLeaderboard()">🏆 CLASSIFICA</button>
+    <!-- Leaderboard open button (shown on SELECT/LEVEL_SELECT) -->
+    <button id="lbOpenBtn" onclick="openLeaderboard()">🏆 LEADERBOARD</button>
 
+    <!-- Leaderboard overlay -->
     <div id="leaderboardOverlay" class="overlay hidden">
-        <h2>🏆 CLASSIFICA GLOBALE</h2>
+        <h2>🏆 GLOBAL LEADERBOARD</h2>
         <div id="lbStatus">Loading...</div>
         <table id="lbTable">
-            <thead><tr><th>#</th><th>NOME</th><th>TEMPO</th></tr></thead>
+            <thead><tr><th>#</th><th>NAME &amp; CHARACTER</th><th>TIME</th></tr></thead>
             <tbody id="lbBody"></tbody>
         </table>
-        <button class="lb-close-btn" onclick="closeLeaderboard()">INDIETRO</button>
+        <button class="lb-close-btn" onclick="closeLeaderboard()">CLOSE</button>
     </div>
 
+    <!-- Score submit overlay -->
     <div id="submitOverlay" class="overlay hidden">
         <h2>🎉 FINITO!</h2>
         <div class="time-display" id="submitTimeDisplay"></div>
-        <input id="playerNameInput" type="text" maxlength="20" placeholder="IL TUO NOME" autocomplete="off" spellcheck="false" />
+        <input id="playerNameInput" type="text" maxlength="20" placeholder="YOUR NAME" autocomplete="off" spellcheck="false" />
         <div class="submit-row">
-            <button class="submit-btn primary" onclick="submitScore()">INVIA</button>
-            <button class="submit-btn secondary" onclick="skipSubmit()">SALTA</button>
-            <button class="submit-btn secondary" onclick="openLeaderboardFromEnd()">VEDI TEMPI</button>
+            <button class="submit-btn primary" onclick="submitScore()">SUBMIT</button>
+            <button class="submit-btn secondary" onclick="skipSubmit()">SKIP</button>
+            <button class="submit-btn secondary" onclick="openLeaderboardFromEnd()">SEE SCORES</button>
         </div>
         <div id="submitStatus"></div>
     </div>
@@ -226,17 +235,50 @@
 
 <script>
 
-const LOOTLOCKER_GAME_KEY      = "dev_6bc4f8539dba4e76b852ef28a00217a1";       // ← Game API Key
-const LOOTLOCKER_GAME_ID       = "105125";        // ← Game ID  
-const LOOTLOCKER_LEADERBOARD_KEY = "hosi_speedrun"; // ← Leaderboard Key
+// ════════════════════════════════════════════════════════════
+//  ██╗      ██████╗  ██████╗ ████████╗██╗      ██████╗  ██████╗██╗  ██╗███████╗██████╗
+//  LOOTLOCKER CONFIGURATION
+//  ════════════════════════════════════════════════════════════
+//
+//  HOW TO GET YOUR API KEYS:
+//  ─────────────────────────────────────────────────────────
+//  1. Go to https://lootlocker.com and sign in (or create a free account).
+//  2. Create a new game (or open your existing one).
+//  3. In the left sidebar click "Settings" → "API Keys".
+//  4. Copy your "Game Key" (also called "Game API Key") — paste it below as LOOTLOCKER_GAME_KEY.
+//  5. In the left sidebar click "Settings" → "General".
+//     Find "Game ID" (a numeric value) — paste it below as LOOTLOCKER_GAME_ID.
+//
+//  LEADERBOARD SETUP:
+//  ─────────────────────────────────────────────────────────
+//  1. In the LootLocker dashboard go to "Leaderboards" in the left sidebar.
+//  2. Click "+ Create Leaderboard".
+//  3. Give it any name, set the type to "Player" and direction to "Ascending"
+//     (lower time score = better rank).
+//  4. After saving, copy the "Leaderboard Key" shown in the leaderboard list.
+//     Paste it below as LOOTLOCKER_LEADERBOARD_KEY.
+//
+//  GUEST SESSIONS (no login needed from players):
+//  ─────────────────────────────────────────────────────────
+//  In "Settings" → "Platforms" make sure "Guest Login" is ENABLED.
+// ════════════════════════════════════════════════════════════
+
+const LOOTLOCKER_GAME_KEY      = "YOUR_GAME_KEY_HERE";       // ← paste Game API Key
+const LOOTLOCKER_GAME_ID       = "YOUR_GAME_ID_HERE";        // ← paste numeric Game ID  
+const LOOTLOCKER_LEADERBOARD_KEY = "YOUR_LEADERBOARD_KEY_HERE"; // ← paste Leaderboard Key
 const LOOTLOCKER_API           = "https://api.lootlocker.io/game";
+
+// ════════════════════════════════════════════════════════════
+//  LOOTLOCKER SESSION & LEADERBOARD HELPERS
+// ════════════════════════════════════════════════════════════
 
 let llSessionToken = null;
 let llPlayerId     = null;
 
 async function llStartGuestSession() {
-    if (llSessionToken) return true;
+    if (llSessionToken) return true; // already have a session
 
+    // Reuse a stored identifier so the same "player" submits each time
     let guestId = localStorage.getItem("ll_guest_id");
     if (!guestId) {
         guestId = "guest_" + Math.random().toString(36).substr(2, 12);
@@ -271,31 +313,21 @@ async function llStartGuestSession() {
     }
 }
 
-async function llSubmitScore(name, timeMs) {
+// Submit a score (time in milliseconds). Lower = better.
+// metadata is a JSON string: {"n":"PLAYERNAME","c":"CRIGUBE","p":"player.png"}
+async function llSubmitScore(name, timeMs, charName, charPlayer) {
     const ok = await llStartGuestSession();
     if (!ok) return { success: false, error: "No session" };
 
+    const meta = JSON.stringify({ n: name, c: charName, p: charPlayer });
     try {
-        await fetch(`${LOOTLOCKER_API}/v1/player/name`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "x-session-token": llSessionToken
-            },
-            body: JSON.stringify({ name: name })
-        });
-
         const res = await fetch(`${LOOTLOCKER_API}/leaderboards/${LOOTLOCKER_LEADERBOARD_KEY}/submit`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "x-session-token": llSessionToken
             },
-            body: JSON.stringify({ 
-                score: timeMs, 
-                member_id: String(llPlayerId), 
-                metadata: name
-            })
+            body: JSON.stringify({ score: timeMs, member_id: String(llPlayerId), metadata: meta })
         });
         const data = await res.json();
         return data;
@@ -304,6 +336,7 @@ async function llSubmitScore(name, timeMs) {
     }
 }
 
+// Fetch top N scores from the leaderboard
 async function llGetLeaderboard(count = 15) {
     const ok = await llStartGuestSession();
     if (!ok) return null;
@@ -319,6 +352,7 @@ async function llGetLeaderboard(count = 15) {
     }
 }
 
+// Live player count via LootLocker's "active players" endpoint
 async function llFetchPlayerCount() {
     try {
         const res = await fetch(`${LOOTLOCKER_API}/v1/player/count`, {
@@ -332,6 +366,10 @@ async function llFetchPlayerCount() {
     } catch (_) { return null; }
 }
 
+// ════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════════════════
+
 function formatTime(ms) {
     let minutes      = Math.floor(ms / 60000);
     let seconds      = Math.floor((ms % 60000) / 1000);
@@ -339,11 +377,13 @@ function formatTime(ms) {
     return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.${String(centiseconds).padStart(2,'0')}`;
 }
 
+// Show leaderboard button when on selection screens
 function updateLbBtnVisibility() {
     const btn = document.getElementById('lbOpenBtn');
     btn.style.display = (gameState === 'SELECT' || gameState === 'LEVEL_SELECT') ? 'block' : 'none';
 }
 
+// Live player count refresh
 async function refreshPlayerCount() {
     const badge = document.getElementById('playerCountBadge');
     const countEl = document.getElementById('playerCountText');
@@ -354,6 +394,7 @@ async function refreshPlayerCount() {
     }
 }
 
+// ─── Leaderboard overlay ───
 async function openLeaderboard() {
     const overlay = document.getElementById('leaderboardOverlay');
     const statusEl = document.getElementById('lbStatus');
@@ -365,18 +406,29 @@ async function openLeaderboard() {
     const data = await llGetLeaderboard(15);
     statusEl.textContent = "";
     if (!data || !data.items || data.items.length === 0) {
-        statusEl.textContent = data ? "Nessun tempo - prova ad essere il primo!" : "Server non raggiunto.";
+        statusEl.textContent = data ? "No scores yet – be the first!" : "Could not reach server.";
         return;
     }
 
     data.items.forEach((entry, i) => {
         const rank = i + 1;
-        const name = (entry.player && entry.player.name) || entry.metadata || entry.member_id || "???";
+
+        // metadata is JSON: {"n":"NAME","c":"CRIGUBE","p":"player.png"}
+        let displayName = "???";
+        let charTag = "";
+        try {
+            const meta = JSON.parse(entry.metadata);
+            if (meta && meta.n) displayName = meta.n;
+            if (meta && meta.c && meta.p) charTag = `<span style="font-size:13px;color:#aaa;margin-left:6px;">${escHtml(meta.c)} [${escHtml(meta.p)}]</span>`;
+        } catch (_) {
+            if (entry.metadata) displayName = entry.metadata; // legacy plain string
+        }
+
         const timeStr = formatTime(entry.score);
-        const medals = ["🥇","🥈","🥉"];
+        const medals = ["\u{1F947}","\u{1F948}","\u{1F949}"];
         const rankDisplay = rank <= 3 ? medals[rank-1] : `<span class="rank-badge">${rank}</span>`;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${rankDisplay}</td><td>${escHtml(name)}</td><td>${timeStr}</td>`;
+        tr.innerHTML = `<td>${rankDisplay}</td><td>${escHtml(displayName)}${charTag}</td><td>${timeStr}</td>`;
         tbody.appendChild(tr);
     });
 }
@@ -385,6 +437,7 @@ function closeLeaderboard() {
     document.getElementById('leaderboardOverlay').classList.add('hidden');
 }
 
+// ─── Submit overlay ───
 function showSubmitOverlay(timeMs) {
     document.getElementById('submitTimeDisplay').textContent = "TEMPO: " + formatTime(timeMs);
     document.getElementById('submitStatus').textContent = "";
@@ -399,16 +452,16 @@ async function submitScore() {
     localStorage.setItem("ll_last_name", name);
 
     statusEl.textContent = "Submitting...";
-    const result = await llSubmitScore(name, pendingScoreMs);
+    const result = await llSubmitScore(name, pendingScoreMs, activeCharName, activeCharPlayer);
 
     if (result && result.success !== false) {
-        statusEl.textContent = "✅ Tempo inviato!";
+        statusEl.textContent = "✅ Score submitted! GG!";
         setTimeout(() => {
             document.getElementById('submitOverlay').classList.add('hidden');
             showEndScreen();
         }, 1400);
     } else {
-        statusEl.textContent = "❌ Invio fallito. Controlla chiavi API.";
+        statusEl.textContent = "❌ Submit failed. Check your API keys.";
     }
 }
 
@@ -420,6 +473,7 @@ function skipSubmit() {
 async function openLeaderboardFromEnd() {
     document.getElementById('submitOverlay').classList.add('hidden');
     await openLeaderboard();
+    // patch close to go back to submit
     const origClose = closeLeaderboard;
     document.querySelector('#leaderboardOverlay .lb-close-btn').onclick = () => {
         closeLeaderboard();
@@ -436,6 +490,10 @@ function escHtml(str) {
     return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// ════════════════════════════════════════════════════════════
+//  GAME CODE (unchanged from original, integrated above)
+// ════════════════════════════════════════════════════════════
+
 const CHARACTERS = {
     char1: { name: "CRIGUBE",    player: "player.png",  flag: "flag.png",  victoryText: "HO SI! VEDERE C!" },
     char3: { name: "CALIENDO",   player: "player3.png", flag: "flag3.png", victoryText: "VOGLIO 100 NUMERI!" },
@@ -448,6 +506,8 @@ let ASSETS = {
     bossCrown: 'boss_crown.png', flagGrey: 'flag_grey.png'
 };
 let activeVictoryText = "HO SI! VEDERE C!";
+let activeCharName   = "CRIGUBE";
+let activeCharPlayer = "player.png";
 
 let startTime   = 0;
 let finalTimeMs = 0;
@@ -653,9 +713,10 @@ function loadLevel(idx){
             pendingScoreMs = finalTimeMs;
         } else {
             finalTimeMs = 0;
-            finalTimeText = "MODALITÀ TEST";
+            finalTimeText = "TEST MODE";
         }
         document.getElementById('ui').style.display='none';
+        // If it was a timed run, show submit overlay instead of going straight to END
         if(isTimerActive){
             gameState = 'SUBMIT';
             document.getElementById('lbOpenBtn').style.display = 'none';
@@ -676,7 +737,9 @@ function loadLevel(idx){
 function init(){
     setupInputs(); resize();
     window.addEventListener('resize',resize);
+    // Start LootLocker session in background + fetch player count
     llStartGuestSession().then(() => refreshPlayerCount());
+    // Refresh player count every 60s
     setInterval(refreshPlayerCount, 60000);
     preloadSelectionImages(()=>{ gameState='SELECT'; updateLbBtnVisibility(); requestAnimationFrame(loop); });
 }
@@ -704,6 +767,8 @@ function handleSelectionClick(canvasX,canvasY){
                 ASSETS.player=CHARACTERS[btn.id].player;
                 ASSETS.flag=CHARACTERS[btn.id].flag;
                 activeVictoryText=CHARACTERS[btn.id].victoryText;
+                activeCharName=CHARACTERS[btn.id].name;
+                activeCharPlayer=CHARACTERS[btn.id].player;
                 loadGameplayAssets(()=>{ gameState='LEVEL_SELECT'; updateLbBtnVisibility(); });
             }
         });
@@ -720,6 +785,7 @@ function handleSelectionClick(canvasX,canvasY){
             }
         });
     } else if(gameState==='END'){
+        // click anywhere on end screen opens leaderboard
         openLeaderboard();
     }
 }
@@ -777,7 +843,7 @@ function drawSelectionScreen(){
     });
     // hint
     ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='18px sans-serif';
-    ctx.fillText('🏆 CLICCA LA CLASSIFICA PER VEDERE I TEMPI',V_WIDTH/2,760);
+    ctx.fillText('🏆 TAP LEADERBOARD TO SEE GLOBAL RANKINGS',V_WIDTH/2,760);
 }
 
 function drawLevelSelectScreen(){
@@ -790,7 +856,7 @@ function drawLevelSelectScreen(){
         ctx.fillText(btn.levelIndex+1,btn.x+btn.w/2,btn.y+btn.h/2+11);
     });
     ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='18px sans-serif';
-    ctx.fillText('⏱ COMINCIA DAL PRIMO LIVELLO PER LA SPEEDRUN',V_WIDTH/2,720);
+    ctx.fillText('⏱ START FROM LEVEL 1 TO RECORD YOUR TIME',V_WIDTH/2,720);
 }
 
 function loop(){
@@ -830,6 +896,7 @@ function loop(){
             else{ ctx.fillStyle='#7f8c8d'; ctx.fillRect(flag.x,flag.y,60,100); ctx.fillStyle='#c0392b'; ctx.fillRect(flag.x+25,flag.y,10,100); }
         }
     } else if(gameState==='SUBMIT'){
+        // draw victory screen behind the overlay
         ctx.textAlign='center';
         ctx.fillStyle='white'; ctx.font='bold 60px sans-serif'; ctx.fillText(activeVictoryText,V_WIDTH/2,V_HEIGHT/2-20);
         ctx.fillStyle='#f1c40f'; ctx.font='bold 40px sans-serif'; ctx.fillText(finalTimeText,V_WIDTH/2,V_HEIGHT/2+60);
@@ -838,7 +905,7 @@ function loop(){
         ctx.fillStyle='white'; ctx.font='bold 60px sans-serif'; ctx.fillText(activeVictoryText,V_WIDTH/2,V_HEIGHT/2-20);
         ctx.fillStyle='#f1c40f'; ctx.font='bold 40px sans-serif'; ctx.fillText(finalTimeText,V_WIDTH/2,V_HEIGHT/2+60);
         ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='22px sans-serif';
-        ctx.fillText('CLICCA DOVUNQUE PER VEDERE I TEMPI',V_WIDTH/2,V_HEIGHT/2+130);
+        ctx.fillText('TAP ANYWHERE TO VIEW LEADERBOARD',V_WIDTH/2,V_HEIGHT/2+130);
         updateLbBtnVisibility();
     }
     requestAnimationFrame(loop);
