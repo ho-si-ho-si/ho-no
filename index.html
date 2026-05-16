@@ -48,12 +48,19 @@ let activePlayersCount = 0;
 let topScores = [];
 
 function initLootLocker() {
-    fetch("https://api.development.lootlocker.io/game/v1/player/auth/guest", {
+    const baseUrl = "https://api.lootlocker.io/game";
+
+    fetch(`${baseUrl}/v1/player/auth/guest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ game_key: LOOTLOCKER_GAME_KEY })
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.session_token) {
             lootLockerSession = data.session_token;
@@ -62,8 +69,6 @@ function initLootLocker() {
             
             fetchActivePlayers();
             fetchLeaderboard();
-        } else {
-            console.error("LootLocker authentication payload failed:", data);
         }
     })
     .catch(err => console.error("Network error executing LootLocker login:", err));
