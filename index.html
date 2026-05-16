@@ -13,13 +13,17 @@
         .control-group { display: flex; gap: 25px; pointer-events: auto; }
         .btn { width: 80px; height: 80px; background-color: rgba(255, 255, 255, 0.2); border: 4px solid rgba(255, 255, 255, 0.4); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 30px; touch-action: manipulation; }
         .btn:active { background-color: rgba(255, 255, 255, 0.5); }
-        #ui { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; display: none; }
+        
+        #ui { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; display: none; }
     </style>
 </head>
 <body>
 
 <div id="gameContainer">
-    <div id="ui">LEVEL: <span id="lvlDisplay">1</span></div>
+    <div id="ui">
+        <div>LEVEL: <span id="lvlDisplay">1</span></div>
+        <div>TIME: <span id="timerDisplay">00:00.00</span></div>
+    </div>
     <canvas id="gameCanvas"></canvas>
     
     <audio id="bgMusic" loop src="skunkorlicorice.mp3"></audio>
@@ -55,6 +59,9 @@ const CHARACTERS = {
 let ASSETS = { player: '', enemy: 'enemy.png', flag: '' };
 let activeVictoryText = "HO SI! VEDERE C!";
 
+let startTime = 0;
+let finalTimeText = "";
+
 const P_WIDTH = 60;   
 const P_HEIGHT = 100; 
 
@@ -69,6 +76,18 @@ const selectButtons = [
     { id: 'char1', x: 250, y: 250, w: 250, h: 400 },
     { id: 'char2', x: 700, y: 250, w: 250, h: 400 }
 ];
+
+function formatTime(ms) {
+    let minutes = Math.floor(ms / 60000);
+    let seconds = Math.floor((ms % 60000) / 1000);
+    let centiseconds = Math.floor((ms % 1000) / 10);
+
+    let mm = minutes.toString().padStart(2, '0');
+    let ss = seconds.toString().padStart(2, '0');
+    let cc = centiseconds.toString().padStart(2, '0');
+
+    return `${mm}:${ss}.${cc}`;
+}
 
 function preloadSelectionImages(callback) {
     let loaded = 0;
@@ -227,7 +246,15 @@ class Enemy {
 let player, enemies = [], platforms = [], flag = null;
 
 function loadLevel(idx) {
-    if (idx >= LEVELS.length) { gameState = 'END'; return; }
+    if (idx >= LEVELS.length) { 
+        let totalElapsed = Date.now() - startTime;
+        finalTimeText = "YOUR TIME: " + formatTime(totalElapsed);
+        
+        document.getElementById('ui').style.display = 'none';
+        
+        gameState = 'END'; 
+        return; 
+    }
     const data = LEVELS[idx];
     player = new Player(data.playerStart.x, data.playerStart.y);
     platforms = data.platforms;
@@ -242,7 +269,7 @@ function init() {
     window.addEventListener('resize', resize);
     preloadSelectionImages(() => {
         gameState = 'SELECT';
-        requestAnimationFrame(loop); // <-- Restored: Starts rendering the screen loops!
+        requestAnimationFrame(loop);
     });
 }
 
@@ -270,8 +297,11 @@ function handleSelectionClick(canvasX, canvasY) {
             activeVictoryText = CHARACTERS[btn.id].victoryText;
             
             loadGameplayAssets(() => {
-                document.getElementById('ui').style.display = 'block';
+                document.getElementById('ui').style.display = 'flex';
                 document.getElementById('touchControls').style.display = 'flex';
+                
+                startTime = Date.now();
+                
                 loadLevel(0);
                 gameState = 'PLAY';
             });
@@ -381,6 +411,9 @@ function loop() {
             currentLevel++; loadLevel(currentLevel);
         }
 
+        let elapsed = Date.now() - startTime;
+        document.getElementById('timerDisplay').innerText = formatTime(elapsed);
+
         platforms.forEach(p => { ctx.fillStyle = '#34495e'; ctx.fillRect(p.x, p.y, p.w, p.h); });
         enemies.forEach(e => e.draw());
         player.draw();
@@ -391,8 +424,15 @@ function loop() {
             ctx.fillStyle = '#f1c40f'; ctx.fillRect(flag.x, flag.y, 60, 100);
         }
     } else {
-        ctx.fillStyle = 'white'; ctx.font = 'bold 60px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(activeVictoryText, V_WIDTH / 2, V_HEIGHT / 2);
+        ctx.textAlign = 'center';
+        
+        ctx.fillStyle = 'white'; 
+        ctx.font = 'bold 60px sans-serif'; 
+        ctx.fillText(activeVictoryText, V_WIDTH / 2, V_HEIGHT / 2 - 20);
+        
+        ctx.fillStyle = '#f1c40f'; 
+        ctx.font = 'bold 40px sans-serif'; 
+        ctx.fillText(finalTimeText, V_WIDTH / 2, V_HEIGHT / 2 + 60);
     }
     requestAnimationFrame(loop);
 }
