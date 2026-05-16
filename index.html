@@ -42,23 +42,22 @@
 
 const LOOTLOCKER_GAME_KEY = "dev_f5e544bca32240c8b0d27f3ab7baea1e";
 const LOOTLOCKER_LEADERBOARD_ID = "global_speedrun";
+
+const LOOTLOCKER_BASE_URL = "https://ogxda9k3.api.lootlocker.io/game"; 
+
 let lootLockerSession = "";
 let playerLootLockerId = "Connecting...";
 let activePlayersCount = 0;
 let topScores = [];
 
 function initLootLocker() {
-    const baseUrl = "https://api.lootlocker.io/game";
-
-    fetch(`${baseUrl}/v1/player/auth/guest`, {
+    fetch(`${LOOTLOCKER_BASE_URL}/v1/player/auth/guest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ game_key: LOOTLOCKER_GAME_KEY })
     })
     .then(res => {
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
     })
     .then(data => {
@@ -76,7 +75,7 @@ function initLootLocker() {
 
 function fetchActivePlayers() {
     if (!lootLockerSession) return;
-    fetch(`https://api.lootlocker.io/game/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/list?count=100`, {
+    fetch(`${LOOTLOCKER_BASE_URL}/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/list?count=100`, {
         method: "GET",
         headers: { "x-session-token": lootLockerSession }
     })
@@ -88,7 +87,7 @@ function fetchActivePlayers() {
 
 function fetchLeaderboard() {
     if (!lootLockerSession) return;
-    fetch(`https://api.lootlocker.io/game/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/list?count=5`, {
+    fetch(`${LOOTLOCKER_BASE_URL}/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/list?count=5`, {
         method: "GET",
         headers: { "x-session-token": lootLockerSession }
     })
@@ -106,7 +105,7 @@ function fetchLeaderboard() {
 
 function submitScoreToLootLocker(scoreMs) {
     if (!lootLockerSession) return;
-    fetch(`https://api.lootlocker.io/game/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/submit`, {
+    fetch(`${LOOTLOCKER_BASE_URL}/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/submit`, {
         method: "POST",
         headers: { 
             "Content-Type": "application/json",
@@ -117,7 +116,7 @@ function submitScoreToLootLocker(scoreMs) {
     .then(res => res.json())
     .then(data => {
         console.log("Score Submitted:", data);
-        fetchLeaderboard();
+        fetchLeaderboard(); 
     });
 }
     
