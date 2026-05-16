@@ -692,9 +692,7 @@ function drawSelectionScreen() {
         ctx.translate(btn.x + btn.w / 2, btn.y + btn.h / 2);
         
         if (btn.id === 'char3') {
-            const spinAngle = animationTimer * 2;
             const pulseScale = 1 + Math.sin(animationTimer) * 0.15;
-            ctx.rotate(spinAngle);
             ctx.scale(pulseScale, pulseScale);
         } else {
             const rotationDirection = index === 0 ? 1 : -1;
@@ -707,7 +705,7 @@ function drawSelectionScreen() {
             ctx.drawImage(img, -90, -150, 180, 300);
         } else {
             if (btn.id === 'char1') ctx.fillStyle = '#FF5733';
-            else if (btn.id === '#char3') ctx.fillStyle = '#2ECC71';
+            else if (btn.id === 'char3') ctx.fillStyle = '#2ECC71';
             else ctx.fillStyle = '#3399FF';
             ctx.fillRect(-60, -100, 120, 200);
         }
