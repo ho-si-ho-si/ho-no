@@ -165,7 +165,7 @@
         <h2>🏆 CLASSIFICA GLOBALE</h2>
         <div id="lbStatus">Loading...</div>
         <table id="lbTable">
-            <thead><tr><th>#</th><th>NOME GIOCATORE</th><th>TEMPO</th></tr></thead>
+            <thead><tr><th>#</th><th>NOME &amp; PERSONAGGIO</th><th>TEMPO</th></tr></thead>
             <tbody id="lbBody"></tbody>
         </table>
         <button class="lb-close-btn" onclick="closeLeaderboard()">INDIETRO</button>
@@ -241,23 +241,11 @@ async function llStartGuestSession() {
     }
 }
 
-async function llSubmitScore(name, timeMs) {
+async function llSubmitScore(name, timeMs, charName, charPlayer) {
     const ok = await llStartGuestSession();
     if (!ok) return { success: false, error: "Nessuna sessione" };
 
-    try {
-        await fetch(`${LOOTLOCKER_API}/v1/player/name`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "x-session-token": llSessionToken
-            },
-            body: JSON.stringify({ name: name })
-        });
-    } catch (e) {
-        console.warn("Could not set LootLocker profile name:", e);
-    }
-
+    const meta = JSON.stringify({ n: name, c: charName, p: charPlayer });
     try {
         const res = await fetch(`${LOOTLOCKER_API}/leaderboards/${LOOTLOCKER_LEADERBOARD_KEY}/submit`, {
             method: "POST",
@@ -265,7 +253,7 @@ async function llSubmitScore(name, timeMs) {
                 "Content-Type": "application/json",
                 "x-session-token": llSessionToken
             },
-            body: JSON.stringify({ score: timeMs, member_id: String(llPlayerId) })
+            body: JSON.stringify({ score: timeMs, member_id: String(llPlayerId), metadata: meta })
         });
         const data = await res.json();
         return data;
@@ -318,9 +306,22 @@ async function openLeaderboard() {
 
     data.items.forEach((entry, i) => {
         const rank = i + 1;
-        let displayName = "";
 
-        if (entry.player && entry.player.name) displayName = entry.player.name;
+        let displayName = "";
+        let charTag = "";
+        try {
+            if (entry.metadata) {
+                const meta = JSON.parse(entry.metadata);
+                if (meta && meta.n) displayName = meta.n;
+                if (meta && meta.c && meta.p) {
+                    charTag = `<span style="font-size:13px;color:#aaa;margin-left:6px;">${escHtml(meta.c)} [${escHtml(meta.p)}]</span>`;
+                }
+            }
+        } catch (_) {
+            if (entry.metadata && entry.metadata.trim()) displayName = entry.metadata.trim();
+        }
+        
+        if (!displayName && entry.player && entry.player.name) displayName = entry.player.name;
         if (!displayName && entry.member_id) displayName = String(entry.member_id);
         if (!displayName) displayName = "ANONIMO";
 
@@ -328,7 +329,7 @@ async function openLeaderboard() {
         const medals = ["\u{1F947}","\u{1F948}","\u{1F949}"];
         const rankDisplay = rank <= 3 ? medals[rank-1] : `<span class="rank-badge">${rank}</span>`;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${rankDisplay}</td><td>${escHtml(displayName)}</td><td>${timeStr}</td>`;
+        tr.innerHTML = `<td>${rankDisplay}</td><td>${escHtml(displayName)}${charTag}</td><td>${timeStr}</td>`;
         tbody.appendChild(tr);
     });
 }
@@ -351,7 +352,7 @@ async function submitScore() {
     localStorage.setItem("ll_last_name", name);
 
     statusEl.textContent = "Inviando...";
-    const result = await llSubmitScore(name, pendingScoreMs);
+    const result = await llSubmitScore(name, pendingScoreMs, activeCharName, activeCharPlayer);
 
     if (result && result.success !== false) {
         statusEl.textContent = "✅ Tempo inviato!";
@@ -472,7 +473,7 @@ const LEVELS = [
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:300,y:150,w:50,h:350},{x:300,y:650,w:50,h:100},{x:700,y:0,w:50,h:500},{x:700,y:650,w:50,h:100}], enemies:[{type:'patrol',x:450,y:650,minX:360,maxX:690},{type:'patrol',x:850,y:650,minX:760,maxX:1100}], flag:{x:1050,y:650} },
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:400,y:550,w:400,h:30}], enemies:[{type:'fireball',x:570,y:450,vx:0,vy:-5,rate:70},{type:'patrol',x:450,y:650,minX:400,maxX:750}], flag:{x:1100,y:650} },
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:250,h:50},{x:400,y:600,w:150,h:30},{x:700,y:480,w:150,h:30},{x:950,y:350,w:250,h:450}], enemies:[{type:'fireball',x:450,y:150,vx:-3,vy:3,rate:100},{type:'fireball',x:750,y:100,vx:0,vy:5,rate:80}], flag:{x:1080,y:250} },
-    { playerStart:{x:1050,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:900,y:610,w:250,h:30},{x:600,y:470,w:250,h:30},{x:300,y:330,w:250,h:30},{x:0,y:210,w:250,h:30}], enemies:[{type:'fireball',x:5,y:650,vx:6,vy:0,rate:120},{type:'fireball',x:50,y:470,vx:6,vy:0,rate:130},{type:'fireball',x:50,y:250,vx:6,vy:0,rate:140}], flag:{x:80,y:110} },
+    { playerStart:{x:1050,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:900,y:610,w:250,h:30},{x:600,y:470,w:250,h:30},{x:300,y:330,w:250,h:30},{x:0,y:210,w:250,h:30}], enemies:[{type:'fireball',x:50,y:650,vx:6,vy:0,rate:120},{type:'fireball',x:50,y:470,vx:6,vy:0,rate:130},{type:'fireball',x:50,y:250,vx:6,vy:0,rate:140}], flag:{x:80,y:110} },
     { playerStart:{x:80,y:140}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:0,w:1200,h:40},{x:0,y:0,w:40,h:800},{x:1160,y:0,w:40,h:800},{x:40,y:260,w:950,h:40},{x:220,y:500,w:940,h:40}], enemies:[{type:'fireball',x:600,y:45,vx:0,vy:4,rate:90},{type:'fireball',x:1100,y:380,vx:-6,vy:0,rate:65},{type:'fireball',x:50,y:620,vx:5,vy:0,rate:80}], flag:{x:1080,y:650} },
     { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:150,y:480,w:200,h:30},{x:850,y:480,w:200,h:30},{x:450,y:300,w:300,h:30}], enemies:[{type:'boss',x:520,y:550,w:160,h:200}], flag:{x:1080,y:380} }
 ];
