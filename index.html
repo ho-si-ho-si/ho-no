@@ -276,13 +276,26 @@ async function llSubmitScore(name, timeMs) {
     if (!ok) return { success: false, error: "No session" };
 
     try {
+        await fetch(`${LOOTLOCKER_API}/v1/player/name`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "x-session-token": llSessionToken
+            },
+            body: JSON.stringify({ name: name })
+        });
+
         const res = await fetch(`${LOOTLOCKER_API}/leaderboards/${LOOTLOCKER_LEADERBOARD_KEY}/submit`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "x-session-token": llSessionToken
             },
-            body: JSON.stringify({ score: timeMs, member_id: String(llPlayerId), metadata: name })
+            body: JSON.stringify({ 
+                score: timeMs, 
+                member_id: String(llPlayerId), 
+                metadata: name
+            })
         });
         const data = await res.json();
         return data;
@@ -358,7 +371,7 @@ async function openLeaderboard() {
 
     data.items.forEach((entry, i) => {
         const rank = i + 1;
-        const name = entry.metadata || entry.member_id || "???";
+        const name = (entry.player && entry.player.name) || entry.metadata || entry.member_id || "???";
         const timeStr = formatTime(entry.score);
         const medals = ["🥇","🥈","🥉"];
         const rankDisplay = rank <= 3 ? medals[rank-1] : `<span class="rank-badge">${rank}</span>`;
