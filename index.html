@@ -243,7 +243,7 @@ async function llStartGuestSession() {
 
 async function llSetPlayerName(name) {
     try {
-        await fetch(`${LOOTLOCKER_API}/v1/player/name`, {
+        await fetch(`${LOOTLOCKER_API}/v1/player`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
