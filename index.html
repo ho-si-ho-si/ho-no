@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>HO SI!</title>
+    <title>Character Select Platformer</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #111; font-family: sans-serif; }
         #gameContainer { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         canvas { background: linear-gradient(to bottom, #2c3e50, #000000); display: block; }
-        #touchControls { position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; pointer-events: none; }
+        #touchControls { position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; pointer-events: none; display: none; }
         .control-group { display: flex; gap: 25px; pointer-events: auto; }
         .btn { width: 80px; height: 80px; background-color: rgba(255, 255, 255, 0.2); border: 4px solid rgba(255, 255, 255, 0.4); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 30px; touch-action: manipulation; }
         .btn:active { background-color: rgba(255, 255, 255, 0.5); }
-        #ui { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; }
+        #ui { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; display: none; }
     </style>
 </head>
 <body>
@@ -21,9 +21,9 @@
 <div id="gameContainer">
     <div id="ui">LEVEL: <span id="lvlDisplay">1</span></div>
     <canvas id="gameCanvas"></canvas>
-
-    <audio id="bgMusic" loop src="skunkorlicorice.mp3"></audio>
     
+    <audio id="bgMusic" loop src="skunkorlicorice.mp3"></audio>
+
     <div id="touchControls">
         <div class="control-group">
             <div id="btnLeft" class="btn">←</div>
@@ -36,31 +36,67 @@
 </div>
 
 <script>
-// --- ASSET CONFIGURATION ---
-const ASSETS = {
-    player: 'player.png', // Your 600x1000 image
-    enemy: 'enemy.png',   // Your 600x1000 image
-    flag: 'flag.png'      // Your 600x1000 image
+// --- CHARACTER PACK CONFIGURATION ---
+// Customize the names and filenames here to match your repository assets exactly!
+const CHARACTERS = {
+    char1: {
+        name: "CRIGUBE",
+        player: "player.png",
+        enemy: "enemy.png",
+        flag: "flag.png"
+    },
+    char2: {
+        name: "SKUNKSPRAY",
+        player: "player2.png", 
+        enemy: "enemy2.png",   
+        flag: "flag2.png"      
+    }
 };
 
-// Scaling: We take your 600x1000 and fit it into a playable hit-box
-// This maintains the 0.6 aspect ratio of your images
+// Current Active Assets (will be rewritten by selection)
+let ASSETS = { player: '', enemy: '', flag: '' };
+
 const P_WIDTH = 60;   
 const P_HEIGHT = 100; 
 
 const images = {};
-let imagesLoaded = 0;
-const assetKeys = Object.keys(ASSETS);
+const uiImages = {}; // Keeps selection images in memory
+let currentLevel = 0;
+let gameState = 'SELECT'; // Starts in Selection Screen mode
+let audioStarted = false;
+let animationTimer = 0;
 
-function loadAssets(callback) {
+// Setup hitboxes for character select screen buttons
+const selectButtons = [
+    { id: 'char1', x: 250, y: 250, w: 250, h: 400 },
+    { id: 'char2', x: 700, y: 250, w: 250, h: 400 }
+];
+
+// Load UI pre-selection image wrappers safely
+function preloadSelectionImages(callback) {
+    let loaded = 0;
+    const paths = [CHARACTERS.char1.player, CHARACTERS.char2.player];
+    const keys = ['char1', 'char2'];
+    
+    paths.forEach((path, i) => {
+        const img = new Image();
+        img.src = path;
+        img.onload = img.onerror = () => {
+            loaded++;
+            if (loaded === paths.length) callback();
+        };
+        uiImages[keys[i]] = img;
+    });
+}
+
+function loadGameplayAssets(callback) {
+    let imagesLoaded = 0;
+    const assetKeys = Object.keys(ASSETS);
+    
     assetKeys.forEach(key => {
         const img = new Image();
         img.src = ASSETS[key];
-        img.onload = () => {
-            imagesLoaded++;
-            if (imagesLoaded === assetKeys.length) callback();
-        };
-        img.onerror = () => { // Fallback if images aren't found on GitHub yet
+        img.onload = img.onerror = () => {
             imagesLoaded++;
             if (imagesLoaded === assetKeys.length) callback();
         };
@@ -71,25 +107,21 @@ function loadAssets(callback) {
 // --- GAME SETTINGS ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const V_WIDTH = 1200;  // Wider world for bigger sprites
-const V_HEIGHT = 800;  // Taller world
+const V_WIDTH = 1200;  
+const V_HEIGHT = 800;  
 const gravity = 0.8;
-let currentLevel = 0;
-let gameState = 'PLAY';
-
-let audioStarted = false;
 
 const keys = { left: false, right: false };
 
 // --- LEVEL DATA ---
 const LEVELS = [
-    { // Level 1 (Tweak: Enemy moved to the ground under the platform)
+    { // Level 1
         playerStart: {x: 100, y: 600},
         platforms: [{x:0, y:750, w:1200, h:50}, {x:400, y:550, w:300, h:30}],
-        enemies: [{x:500, y:650, minX:400, maxX:700}], // Now patrols the ground floor
+        enemies: [{x:500, y:650, minX:400, maxX:700}], 
         flag: {x: 1050, y: 650}
     },
-    { // Level 2 (Tweak: Swapped Enemy and Flag positions)
+    { // Level 2
         playerStart: {x: 50, y: 600},
         platforms: [
             {x:0, y:750, w:350, h:50},     
@@ -97,26 +129,23 @@ const LEVELS = [
             {x:200, y:620, w:200, h:30},   
             {x:450, y:480, w:200, h:30}    
         ],
-        enemies: [{x:460, y:380, minX:450, maxX:650}], // Enemy is now up on Step 2
-        flag: {x: 1050, y: 650}            // Flag is now on the far right ground
+        enemies: [{x:460, y:380, minX:450, maxX:650}], 
+        flag: {x: 1050, y: 650}            
     },
-    { // Level 3
+    { // Level 3 (Hanging wall forces player down)
         playerStart: {x: 50, y: 100},
         platforms: [
-            {x:0, y:750, w:1200, h:50},    // Ground floor completely wide open
-            {x:0, y:250, w:300, h:30},     // Starting high platform
-            {x:100, y:550, w:300, h:30},    // Mid left step
-            {x:400, y:400, w:300, h:30},    // Center platform
-            
-            // THE HANGING WALL: Starts at the sky (y:0) and hangs down 530px deep.
-            // It completely blocks the top path but leaves a 220px high passage on the ground.
+            {x:0, y:750, w:1200, h:50},    
+            {x:0, y:250, w:300, h:30},     
+            {x:100, y:550, w:300, h:30},    
+            {x:400, y:400, w:300, h:30},    
             {x:750, y:0, w:60, h:530}     
         ],
         enemies: [
-            {x:850, y:650, minX:820, maxX:1100}, // Enemy patrolling the area past the hanging wall
-            {x:450, y:300, minX:400, maxX:650}   // Enemy patrolling the center high platform
+            {x:850, y:650, minX:820, maxX:1100}, 
+            {x:450, y:300, minX:400, maxX:650}   
         ],
-        flag: {x: 1050, y: 650}
+        flag: {x: 1050, y: 650} 
     },
     { // Level 4
         playerStart: {x: 100, y: 600},
@@ -124,20 +153,18 @@ const LEVELS = [
         enemies: [{x:950, y:200, minX:900, maxX:1150}],
         flag: {x: 1100, y: 200}
     },
-    { // Level 5 (FIXED: Cut a passage through the wall, guarded by an enemy)
+    { // Level 5
         playerStart: {x: 50, y: 650},
         platforms: [
             {x:0, y:750, w:1200, h:50}, 
-            // Wall 1: Split into a lower wall and an upper wall to leave a gap at y:500-650
-            {x:300, y:150, w:50, h:350},  // Top half of wall 1
-            {x:300, y:650, w:50, h:100},  // Bottom half of wall 1
-            // Wall 2: Split to leave a matching gap
-            {x:700, y:0, w:50, h:500},    // Top half of wall 2
-            {x:700, y:650, w:50, h:100}   // Bottom half of wall 2
+            {x:300, y:150, w:50, h:350},  
+            {x:300, y:650, w:50, h:100},  
+            {x:700, y:0, w:50, h:500},    
+            {x:700, y:650, w:50, h:100}   
         ],
         enemies: [
-            {x:450, y:650, minX:360, maxX:690}, // Guarding the courtyard between walls
-            {x:850, y:650, minX:760, maxX:1100} // Guarding the final flag approach
+            {x:450, y:650, minX:360, maxX:690}, 
+            {x:850, y:650, minX:760, maxX:1100} 
         ],
         flag: {x: 1050, y: 650}
     }
@@ -159,160 +186,4 @@ class Player {
     collide(platforms, dir) {
         platforms.forEach(p => {
             if (this.x < p.x + p.w && this.x + this.w > p.x && this.y < p.y + p.h && this.y + this.h > p.y) {
-                if (dir === 'h') this.x = (this.vx > 0) ? p.x - this.w : p.x + p.w;
-                else {
-                    if (this.vy > 0) { this.y = p.y - this.h; this.grounded = true; }
-                    else this.y = p.y + p.h;
-                    this.vy = 0;
-                }
-            }
-        });
-    }
-    draw() {
-        if (images.player.complete && images.player.width > 0) {
-            ctx.drawImage(images.player, this.x, this.y, this.w, this.h);
-        } else {
-            ctx.fillStyle = '#FF5733'; ctx.fillRect(this.x, this.y, this.w, this.h);
-        }
-    }
-}
-
-class Enemy {
-    constructor(data) {
-        this.w = P_WIDTH; this.h = P_HEIGHT; 
-        this.x = data.x; this.y = data.y; this.minX = data.minX; this.maxX = data.maxX;
-        this.dir = 1;
-    }
-    update() {
-        this.x += 3 * this.dir;
-        if (this.x >= this.maxX - this.w || this.x <= this.minX) this.dir *= -1;
-    }
-    draw() {
-        if (images.enemy.complete && images.enemy.width > 0) {
-            ctx.drawImage(images.enemy, this.x, this.y, this.w, this.h);
-        } else {
-            ctx.fillStyle = '#8B0000'; ctx.fillRect(this.x, this.y, this.w, this.h);
-        }
-    }
-}
-
-// --- ENGINE ---
-let player, enemies = [], platforms = [], flag = null;
-
-function loadLevel(idx) {
-    if (idx >= LEVELS.length) { gameState = 'END'; return; }
-    const data = LEVELS[idx];
-    player = new Player(data.playerStart.x, data.playerStart.y);
-    platforms = data.platforms;
-    flag = data.flag;
-    enemies = data.enemies.map(e => new Enemy(e));
-    document.getElementById('lvlDisplay').innerText = idx + 1;
-}
-
-function init() {
-    loadLevel(0);
-    setupInputs();
-    resize();
-    window.addEventListener('resize', resize);
-    requestAnimationFrame(loop);
-}
-
-function resize() {
-    const scale = Math.min(window.innerWidth / V_WIDTH, window.innerHeight / V_HEIGHT);
-    canvas.width = V_WIDTH * scale; canvas.height = V_HEIGHT * scale;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-}
-
-function setupInputs() {
-    const bL = document.getElementById('btnLeft'), bR = document.getElementById('btnRight'), bJ = document.getElementById('btnJump');
-    const music = document.getElementById('bgMusic');
-    
-    // --- FOOLPROOF AUDIO KICKSTART ---
-    // The very split-second the user clicks or taps ANYWHERE on the screen, force-start the music
-    const kickstartAudio = () => {
-        if (!audioStarted) {
-            music.volume = 0.4; // 40% volume
-            music.play()
-                .then(() => {
-                    audioStarted = true;
-                    // Remove listeners once successfully playing so they don't waste CPU
-                    window.removeEventListener('click', kickstartAudio);
-                    window.removeEventListener('touchstart', kickstartAudio);
-                    window.removeEventListener('keydown', kickstartAudio);
-                })
-                .catch(err => console.log("Audio play deferred:", err));
-        }
-    };
-    window.addEventListener('click', kickstartAudio);
-    window.addEventListener('touchstart', kickstartAudio);
-    window.addEventListener('keydown', kickstartAudio);
-
-    // --- LEFT BUTTON ---
-    bL.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
-    bL.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
-    bL.addEventListener('mousedown', () => { keys.left = true; });
-    bL.addEventListener('mouseup', () => { keys.left = false; });
-    bL.addEventListener('mouseleave', () => { keys.left = false; });
-
-    // --- RIGHT BUTTON ---
-    bR.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
-    bR.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
-    bR.addEventListener('mousedown', () => { keys.right = true; });
-    bR.addEventListener('mouseup', () => { keys.right = false; });
-    bR.addEventListener('mouseleave', () => { keys.right = false; });
-
-    // --- JUMP BUTTON ---
-    const triggerJump = (e) => { 
-        if(e) e.preventDefault(); 
-        if(player.grounded) player.vy = -22; 
-    };
-    bJ.addEventListener('touchstart', triggerJump);
-    bJ.addEventListener('mousedown', triggerJump);
-
-    // --- KEYBOARD CONTROLS ---
-    window.addEventListener('keydown', e => {
-        if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-        if(e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
-        if(e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') if(player.grounded) player.vy = -22;
-    });
-    window.addEventListener('keyup', e => {
-        if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-        if(e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
-    });
-}
-
-function loop() {
-    ctx.clearRect(0, 0, V_WIDTH, V_HEIGHT);
-    if (gameState === 'PLAY') {
-        player.update(platforms);
-        enemies.forEach(e => {
-            e.update();
-            if (player.x < e.x + e.w && player.x + player.w > e.x && player.y < e.y + e.h && player.y + player.h > e.y) {
-                player.reset(LEVELS[currentLevel].playerStart.x, LEVELS[currentLevel].playerStart.y);
-            }
-        });
-
-        if (player.x < flag.x + 60 && player.x + player.w > flag.x && player.y < flag.y + 100 && player.y + player.h > flag.y) {
-            currentLevel++; loadLevel(currentLevel);
-        }
-
-        platforms.forEach(p => { ctx.fillStyle = '#34495e'; ctx.fillRect(p.x, p.y, p.w, p.h); });
-        enemies.forEach(e => e.draw());
-        player.draw();
-        
-        if (images.flag.complete && images.flag.width > 0) {
-            ctx.drawImage(images.flag, flag.x, flag.y, 60, 100);
-        } else {
-            ctx.fillStyle = '#f1c40f'; ctx.fillRect(flag.x, flag.y, 60, 100);
-        }
-    } else {
-        ctx.fillStyle = 'white'; ctx.font = '60px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('VEDERE C! HO SI!', V_WIDTH/2, V_HEIGHT/2);
-    }
-    requestAnimationFrame(loop);
-}
-
-loadAssets(init);
-</script>
-</body>
-</html>
+                if (dir === 'h') this.x = (this.vx > 0) ? p.x - this.w : p.x
