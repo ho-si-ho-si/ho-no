@@ -39,6 +39,82 @@
 </div>
 
 <script>
+
+const LOOTLOCKER_GAME_KEY = "dev_f5e544bca32240c8b0d27f3ab7baea1e";
+const LOOTLOCKER_LEADERBOARD_ID = "global_speedrun";
+let lootLockerSession = "";
+let playerLootLockerId = "Connecting...";
+let activePlayersCount = 0;
+let topScores = [];
+
+function initLootLocker() {
+    fetch("https://api.lootlocker.io/game/v1/player/auth/guest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ game_key: LOOTLOCKER_GAME_KEY })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.session_token) {
+            lootLockerSession = data.session_token;
+            playerLootLockerId = data.player_id;
+            console.log("LootLocker Session Started. Player ID:", playerLootLockerId);
+            
+            fetchActivePlayers();
+            fetchLeaderboard();
+        } else {
+            console.error("LootLocker authentication payload failed:", data);
+        }
+    })
+    .catch(err => console.error("Network error executing LootLocker login:", err));
+}
+
+function fetchActivePlayers() {
+    if (!lootLockerSession) return;
+    fetch(`https://api.lootlocker.io/game/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/list?count=100`, {
+        method: "GET",
+        headers: { "x-session-token": lootLockerSession }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.items) activePlayersCount = data.items.length;
+    });
+}
+
+function fetchLeaderboard() {
+    if (!lootLockerSession) return;
+    fetch(`https://api.lootlocker.io/game/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/list?count=5`, {
+        method: "GET",
+        headers: { "x-session-token": lootLockerSession }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.items) {
+            topScores = data.items.map(item => ({
+                rank: item.rank,
+                id: item.player.id,
+                score: item.score
+            }));
+        }
+    });
+}
+
+function submitScoreToLootLocker(scoreMs) {
+    if (!lootLockerSession) return;
+    fetch(`https://api.lootlocker.io/game/leaderboards/${LOOTLOCKER_LEADERBOARD_ID}/submit`, {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            "x-session-token": lootLockerSession 
+        },
+        body: JSON.stringify({ score: scoreMs })
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Score Submitted:", data);
+        fetchLeaderboard();
+    });
+}
     
 const CHARACTERS = {
     char1: {
@@ -547,6 +623,8 @@ function loadLevel(idx) {
         if (isTimerActive) {
             let totalElapsed = Date.now() - startTime;
             finalTimeText = "TEMPO: " + formatTime(totalElapsed);
+            
+            submitScoreToLootLocker(totalElapsed);
         } else {
             finalTimeText = "TEST";
         }
@@ -567,6 +645,9 @@ function init() {
     setupInputs();
     resize();
     window.addEventListener('resize', resize);
+    
+    initLootLocker();
+
     preloadSelectionImages(() => {
         gameState = 'SELECT';
         requestAnimationFrame(loop);
@@ -750,6 +831,12 @@ function loop() {
     
     if (gameState === 'SELECT') {
         drawSelectionScreen();
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`GIOCATORI REGISTRATI: ${activePlayersCount}`, V_WIDTH - 40, 40);
+
     } else if (gameState === 'LEVEL_SELECT') {
         drawLevelSelectScreen();
     } else if (gameState === 'PLAY') {
@@ -825,11 +912,35 @@ function loop() {
         ctx.textAlign = 'center';
         ctx.fillStyle = 'white'; 
         ctx.font = 'bold 60px sans-serif'; 
-        ctx.fillText(activeVictoryText, V_WIDTH / 2, V_HEIGHT / 2 - 20);
+        ctx.fillText(activeVictoryText, V_WIDTH / 2, V_HEIGHT / 2 - 140);
         
         ctx.fillStyle = '#f1c40f'; 
         ctx.font = 'bold 40px sans-serif'; 
-        ctx.fillText(finalTimeText, V_WIDTH / 2, V_HEIGHT / 2 + 60);
+        ctx.fillText(finalTimeText, V_WIDTH / 2, V_HEIGHT / 2 - 70);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(V_WIDTH / 2 - 250, V_HEIGHT / 2 - 30, 500, 260);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.strokeRect(V_WIDTH / 2 - 250, V_HEIGHT / 2 - 30, 500, 260);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText("CLASSIFICA GLOBALE (TOP 5)", V_WIDTH / 2, V_HEIGHT / 2 + 10);
+
+        ctx.font = '20px sans-serif';
+        if (topScores.length === 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fillText("Nessun record caricato...", V_WIDTH / 2, V_HEIGHT / 2 + 80);
+        } else {
+            topScores.forEach((row, i) => {
+                ctx.textAlign = 'left';
+                ctx.fillStyle = (row.id === playerLootLockerId) ? '#2ecc71' : '#fff';
+                ctx.fillText(`#${row.rank} Player ${row.id}`, V_WIDTH / 2 - 200, V_HEIGHT / 2 + 60 + (i * 35));
+                
+                ctx.textAlign = 'right';
+                ctx.fillText(formatTime(row.score), V_WIDTH / 2 + 200, V_HEIGHT / 2 + 60 + (i * 35));
+            });
+        }
     }
     requestAnimationFrame(loop);
 }
