@@ -234,21 +234,41 @@ const LOOTLOCKER_API             = "https://api.lootlocker.io/game";
 let llSessionToken = null;
 let llPlayerId     = null;
 
-async function llFetchPlayerCount() {
-    const ok = await llStartGuestSession();
-    if (!ok) return null;
+async function llStartGuestSession() {
+    if (llSessionToken) return true;
+
+    let guestId = localStorage.getItem("ll_guest_id");
+    if (!guestId) {
+        guestId = "guest_" + Math.random().toString(36).substr(2, 12);
+        localStorage.setItem("ll_guest_id", guestId);
+    }
 
     try {
-        const res = await fetch(`${LOOTLOCKER_API}/v1/player/count`, {
+        const res = await fetch(`${LOOTLOCKER_API}/v2/session/guest`, {
+            method: "POST",
             headers: {
+                "Content-Type": "application/json",
                 "x-game-key": LOOTLOCKER_GAME_KEY,
-                "x-game-version": "1.0.0",
-                "x-session-token": llSessionToken
-            }
+                "x-game-version": "1.0.0"
+            },
+            body: JSON.stringify({
+                game_key: LOOTLOCKER_GAME_KEY,
+                game_version: "1.0.0",
+                identifier: guestId
+            })
         });
         const data = await res.json();
-        return data.count ?? null;
-    } catch (_) { return null; }
+        if (data.success) {
+            llSessionToken = data.session_token;
+            llPlayerId     = data.player_id;
+            return true;
+        }
+        console.warn("LootLocker session failed:", data);
+        return false;
+    } catch (e) {
+        console.warn("LootLocker session error:", e);
+        return false;
+    }
 }
 
 async function llSubmitScore(name, timeMs, charName, charPlayer) {
