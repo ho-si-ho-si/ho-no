@@ -241,9 +241,26 @@ async function llStartGuestSession() {
     }
 }
 
+async function llSetPlayerName(name) {
+    try {
+        await fetch(`${LOOTLOCKER_API}/v1/player/name`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "x-session-token": llSessionToken
+            },
+            body: JSON.stringify({ name: name })
+        });
+    } catch (e) {
+        console.warn("Could not set player name:", e);
+    }
+}
+
 async function llSubmitScore(name, timeMs, characterName) {
     const ok = await llStartGuestSession();
     if (!ok) return { success: false, error: "Nessuna sessione" };
+
+    await llSetPlayerName(name);
 
     const metadata = "playername:" + name + "|character:" + characterName;
 
@@ -315,19 +332,14 @@ async function openLeaderboard() {
         let processedPlayerName = "";
         let characterUsed = "";
 
-        // Safely extract parts from your structured metadata format string
+        // Try structured metadata first (playername:X|character:Y)
         if (entry.metadata && entry.metadata.includes("playername:") && entry.metadata.includes("|character:")) {
-            try {
-                const parts = entry.metadata.split("|");
-                processedPlayerName = parts[0].replace("playername:", "").trim();
-                characterUsed = parts[1].replace("character:", "").trim();
-            } catch(e) {
-                processedPlayerName = "";
-                characterUsed = "";
-            }
+            const sepIdx = entry.metadata.indexOf("|character:");
+            processedPlayerName = entry.metadata.slice("playername:".length, sepIdx).trim();
+            characterUsed = entry.metadata.slice(sepIdx + "|character:".length).trim();
         }
 
-        // Fallbacks for scores submitted before or without the structured metadata
+        // Fallback chain: player profile name → member_id → ANONIMO
         if (!processedPlayerName) {
             if (entry.player && entry.player.name) processedPlayerName = entry.player.name;
             else if (entry.member_id) processedPlayerName = String(entry.member_id);
