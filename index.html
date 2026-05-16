@@ -223,10 +223,10 @@ const LEVELS = [
             {x: 0, y: 210, w: 250, h: 30}      
         ],
         enemies: [
-            // Middle enemy moved higher (y changed from 400 to 330)
-            {type: 'fireball', x: 50, y: 330, vx: 6, vy: 0, rate: 120},
-            // Second enemy swapped to the right side behind the player spawn zone
-            {type: 'fireball', x: 1100, y: 540, vx: -4, vy: 0, rate: 150}
+            // Three enemies on the left shooting right
+            {type: 'fireball', x: 50, y: 650, vx: 6, vy: 0, rate: 120},
+            {type: 'fireball', x: 50, y: 470, vx: 6, vy: 0, rate: 130},
+            {type: 'fireball', x: 50, y: 250, vx: 6, vy: 0, rate: 140}
         ],
         flag: {x: 80, y: 110} 
     },
@@ -241,9 +241,12 @@ const LEVELS = [
             {x: 220, y: 500, w: 940, h: 40}   
         ],
         enemies: [
-            {type: 'fireball', x: 1100, y: 140, vx: -6, vy: 0, rate: 60},
-            {type: 'fireball', x: 600, y: 60, vx: 0, vy: 4, rate: 90},
-            {type: 'fireball', x: 50, y: 380, vx: 6, vy: 0, rate: 65},
+            // Removed the top-right enemy entirely
+            // Middle vertical dropper raised higher up (y changed from 60 to 45)
+            {type: 'fireball', x: 600, y: 45, vx: 0, vy: 4, rate: 90},
+            // Left middle enemy moved over to the right middle corridor, shooting left
+            {type: 'fireball', x: 1100, y: 380, vx: -6, vy: 0, rate: 65},
+            // Bottom horizontal shooter remains standard
             {type: 'fireball', x: 50, y: 620, vx: 5, vy: 0, rate: 80}
         ],
         flag: {x: 1080, y: 650}
