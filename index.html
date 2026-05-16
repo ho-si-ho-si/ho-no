@@ -69,6 +69,7 @@ let activeVictoryText = "HO SI! VEDERE C!";
 
 let startTime = 0;
 let finalTimeText = "";
+let isTimerActive = false;
 
 const P_WIDTH = 60;   
 const P_HEIGHT = 100; 
@@ -84,6 +85,24 @@ const selectButtons = [
     { id: 'char1', x: 250, y: 250, w: 250, h: 400 },
     { id: 'char2', x: 700, y: 250, w: 250, h: 400 }
 ];
+
+const levelSelectButtons = [];
+const cols = 5;
+const startX = 240;
+const startY = 320;
+const btnSpacing = 150;
+
+for (let i = 0; i < 10; i++) {
+    let row = Math.floor(i / cols);
+    let col = i % cols;
+    levelSelectButtons.push({
+        levelIndex: i,
+        x: startX + col * btnSpacing,
+        y: startY + row * btnSpacing,
+        w: 100,
+        h: 100
+    });
+}
 
 function formatTime(ms) {
     let minutes = Math.floor(ms / 60000);
@@ -435,11 +454,13 @@ class Enemy {
                 }
 
                 if (!this.isDead) {
-                    let crownW = this.w * 0.55;
-                    let crownH = crownW * 0.45;
+                    let crownW = this.w * (256 / 418);
+                    let crownH = crownW * (197 / 256); 
+                
                     let crownX = this.x + (this.w - crownW) / 2;
-                    let crownY = this.y - (crownH * 0.65);
-
+                
+                    let crownY = this.y - crownH;
+                
                     if (images.bossCrown && images.bossCrown.complete && images.bossCrown.width > 0) {
                         ctx.drawImage(images.bossCrown, crownX, crownY, crownW, crownH);
                     } else {
@@ -462,8 +483,8 @@ class Enemy {
                 ctx.save();
                 ctx.translate(this.crownX, this.crownY);
                 ctx.rotate(this.crownAngle);
-                let cW = this.initialW * 0.55;
-                let cH = cW * 0.45;
+                let cW = this.initialW * 0.65;
+                let cH = cW * 0.42;
                 if (images.bossCrown && images.bossCrown.complete && images.bossCrown.width > 0) {
                     ctx.drawImage(images.bossCrown, -cW/2, -cH/2, cW, cH);
                 } else {
@@ -516,12 +537,17 @@ let player, enemies = [], platforms = [], fireballs = [], flag = null;
 function loadLevel(idx) {
     fireballs = []; 
     if (idx >= LEVELS.length) { 
-        let totalElapsed = Date.now() - startTime;
-        finalTimeText = "YOUR TIME: " + formatTime(totalElapsed);
+        if (isTimerActive) {
+            let totalElapsed = Date.now() - startTime;
+            finalTimeText = "YOUR TIME: " + formatTime(totalElapsed);
+        } else {
+            finalTimeText = "TEST COMPLETION";
+        }
         document.getElementById('ui').style.display = 'none';
         gameState = 'END'; 
         return; 
     }
+    currentLevel = idx;
     const data = LEVELS[idx];
     player = new Player(data.playerStart.x, data.playerStart.y);
     platforms = data.platforms;
@@ -556,21 +582,37 @@ function startAudio() {
 }
 
 function handleSelectionClick(canvasX, canvasY) {
-    selectButtons.forEach(btn => {
-        if (canvasX >= btn.x && canvasX <= btn.x + btn.w && canvasY >= btn.y && canvasY <= btn.y + btn.h) {
-            ASSETS.player = CHARACTERS[btn.id].player;
-            ASSETS.flag = CHARACTERS[btn.id].flag;
-            activeVictoryText = CHARACTERS[btn.id].victoryText;
-            
-            loadGameplayAssets(() => {
+    if (gameState === 'SELECT') {
+        selectButtons.forEach(btn => {
+            if (canvasX >= btn.x && canvasX <= btn.x + btn.w && canvasY >= btn.y && canvasY <= btn.y + btn.h) {
+                ASSETS.player = CHARACTERS[btn.id].player;
+                ASSETS.flag = CHARACTERS[btn.id].flag;
+                activeVictoryText = CHARACTERS[btn.id].victoryText;
+                
+                loadGameplayAssets(() => {
+                    gameState = 'LEVEL_SELECT';
+                });
+            }
+        });
+    } else if (gameState === 'LEVEL_SELECT') {
+        levelSelectButtons.forEach(btn => {
+            if (canvasX >= btn.x && canvasX <= btn.x + btn.w && canvasY >= btn.y && canvasY <= btn.y + btn.h) {
                 document.getElementById('ui').style.display = 'flex';
                 document.getElementById('touchControls').style.display = 'flex';
-                startTime = Date.now();
-                loadLevel(0);
+                
+                if (btn.levelIndex === 0) {
+                    startTime = Date.now();
+                    isTimerActive = true;
+                } else {
+                    isTimerActive = false;
+                    document.getElementById('timerDisplay').innerText = "TEST MODE";
+                }
+                
+                loadLevel(btn.levelIndex);
                 gameState = 'PLAY';
-            });
-        }
-    });
+            }
+        });
+    }
 }
 
 function setupInputs() {
@@ -587,7 +629,7 @@ function setupInputs() {
         const x = (clientX - rect.left) * scaleX;
         const y = (clientY - rect.top) * scaleY;
         
-        if (gameState === 'SELECT') handleSelectionClick(x, y);
+        if (gameState === 'SELECT' || gameState === 'LEVEL_SELECT') handleSelectionClick(x, y);
     };
     canvas.addEventListener('mousedown', getCanvasCoordinates);
     canvas.addEventListener('touchstart', (e) => { e.preventDefault(); getCanvasCoordinates(e); });
@@ -657,11 +699,30 @@ function drawSelectionScreen() {
     });
 }
 
+function drawLevelSelectScreen() {
+    ctx.fillStyle = 'white'; ctx.font = 'bold 48px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('SELECT A LEVEL', V_WIDTH / 2, 160);
+
+    levelSelectButtons.forEach(btn => {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 3;
+        
+        ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+        ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 32px sans-serif';
+        ctx.fillText(btn.levelIndex + 1, btn.x + btn.w / 2, btn.y + btn.h / 2 + 11);
+    });
+}
+
 function loop() {
     ctx.clearRect(0, 0, V_WIDTH, V_HEIGHT);
     
     if (gameState === 'SELECT') {
         drawSelectionScreen();
+    } else if (gameState === 'LEVEL_SELECT') {
+        drawLevelSelectScreen();
     } else if (gameState === 'PLAY') {
         player.update(platforms);
 
@@ -708,8 +769,10 @@ function loop() {
             }
         }
 
-        let elapsed = Date.now() - startTime;
-        document.getElementById('timerDisplay').innerText = formatTime(elapsed);
+        if (isTimerActive) {
+            let elapsed = Date.now() - startTime;
+            document.getElementById('timerDisplay').innerText = formatTime(elapsed);
+        }
 
         platforms.forEach(p => { ctx.fillStyle = '#34495e'; ctx.fillRect(p.x, p.y, p.w, p.h); });
         enemies.forEach(e => e.draw());
