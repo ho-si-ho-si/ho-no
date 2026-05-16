@@ -223,9 +223,10 @@ const LEVELS = [
             {x: 0, y: 210, w: 250, h: 30}      
         ],
         enemies: [
-            {type: 'fireball', x: 50, y: 260, vx: 5, vy: 0, rate: 140},  
-            {type: 'fireball', x: 50, y: 400, vx: 6, vy: 0, rate: 120},
-            {type: 'fireball', x: 50, y: 540, vx: 4, vy: 0, rate: 150}
+            // Middle enemy moved higher (y changed from 400 to 330)
+            {type: 'fireball', x: 50, y: 330, vx: 6, vy: 0, rate: 120},
+            // Second enemy swapped to the right side behind the player spawn zone
+            {type: 'fireball', x: 1100, y: 540, vx: -4, vy: 0, rate: 150}
         ],
         flag: {x: 80, y: 110} 
     },
