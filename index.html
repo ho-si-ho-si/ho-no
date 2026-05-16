@@ -8,7 +8,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #111; font-family: sans-serif; }
         #gameContainer { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-        canvas { background: linear-gradient(to bottom, #2c3e50, #000000); display: block; }
+        canvas { background: linear-gradient(to bottom, #2c3e50, #000000); display: block; touch-action: none; }
         #touchControls { position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; pointer-events: none; display: none; }
         .control-group { display: flex; gap: 25px; pointer-events: auto; }
         .btn { width: 80px; height: 80px; background-color: rgba(255, 255, 255, 0.2); border: 4px solid rgba(255, 255, 255, 0.4); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 30px; touch-action: manipulation; }
@@ -360,15 +360,22 @@ async function openLeaderboard() {
     data.items.forEach((entry, i) => {
         const rank = i + 1;
 
-        let displayName = "???";
+        let displayName = "";
         let charTag = "";
         try {
-            const meta = JSON.parse(entry.metadata);
-            if (meta && meta.n) displayName = meta.n;
-            if (meta && meta.c && meta.p) charTag = `<span style="font-size:13px;color:#aaa;margin-left:6px;">${escHtml(meta.c)} [${escHtml(meta.p)}]</span>`;
+            if (entry.metadata) {
+                const meta = JSON.parse(entry.metadata);
+                if (meta && meta.n) displayName = meta.n;
+                if (meta && meta.c && meta.p) charTag = `<span style="font-size:13px;color:#aaa;margin-left:6px;">${escHtml(meta.c)} [${escHtml(meta.p)}]</span>`;
+            }
         } catch (_) {
-            if (entry.metadata) displayName = entry.metadata;
+            // metadata is a plain string, not JSON
+            if (entry.metadata && entry.metadata.trim()) displayName = entry.metadata.trim();
         }
+        // Fallbacks: player name from LootLocker, then member_id, then ANONIMO
+        if (!displayName && entry.player && entry.player.name) displayName = entry.player.name;
+        if (!displayName && entry.member_id) displayName = String(entry.member_id);
+        if (!displayName) displayName = "ANONIMO";
 
         const timeStr = formatTime(entry.score);
         const medals = ["\u{1F947}","\u{1F948}","\u{1F949}"];
@@ -524,7 +531,7 @@ const LEVELS = [
 
 class Fireball {
     constructor(x,y,vx,vy){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.r=12; }
-    update(){ this.x+=this.vx; this.y+=this.vy; return !(this.x<-100||this.x>V_WIDTH+100||this.y<-100||this.y>V_HEIGHT+100); }
+    update(dt=1){ this.x+=this.vx*dt; this.y+=this.vy*dt; return !(this.x<-100||this.x>V_WIDTH+100||this.y<-100||this.y>V_HEIGHT+100); }
     draw(){
         ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fillStyle='#ff3300'; ctx.fill();
         ctx.beginPath(); ctx.arc(this.x,this.y,this.r*0.6,0,Math.PI*2); ctx.fillStyle='#ffcc00'; ctx.fill();
@@ -534,11 +541,11 @@ class Fireball {
 class Player {
     constructor(x,y){ this.w=P_WIDTH; this.h=P_HEIGHT; this.reset(x,y); }
     reset(x,y){ this.x=x; this.y=y; this.vx=0; this.vy=0; this.grounded=false; }
-    update(platforms){
+    update(platforms, dt=1){
         if(keys.left) this.vx=-7; else if(keys.right) this.vx=7; else this.vx=0;
-        this.vy+=gravity;
-        this.x+=this.vx; this.collide(platforms,'h');
-        this.y+=this.vy; this.grounded=false; this.collide(platforms,'v');
+        this.vy+=gravity*dt;
+        this.x+=this.vx*dt; this.collide(platforms,'h');
+        this.y+=this.vy*dt; this.grounded=false; this.collide(platforms,'v');
         if(this.y>V_HEIGHT) this.reset(LEVELS[currentLevel].playerStart.x, LEVELS[currentLevel].playerStart.y);
     }
     collide(platforms,dir){
@@ -567,41 +574,42 @@ class Enemy {
             this.initialW=this.w; this.initialH=this.h;
         }
     }
-    update(){
+    update(dt=1){
         if(this.type==='boss'){
             if(this.isDead){
-                this.deathTimer++;
-                this.crownX+=this.crownVx; this.crownY+=this.crownVy; this.crownVy+=gravity; this.crownAngle+=0.1;
+                this.deathTimer+=dt;
+                this.crownX+=this.crownVx*dt; this.crownY+=this.crownVy*dt; this.crownVy+=gravity*dt; this.crownAngle+=0.1*dt;
                 let tX=(V_WIDTH-this.w)/2, tY=(V_HEIGHT-this.h)/2;
-                this.x+=(tX-this.x)*0.1; this.y+=(tY-this.y)*0.1;
+                this.x+=(tX-this.x)*0.1*dt; this.y+=(tY-this.y)*0.1*dt;
                 let scale=Math.max(0,1-(this.deathTimer/100));
                 this.w=this.initialW*scale; this.h=this.initialH*scale;
                 if(this.deathTimer>=100){this.w=0;this.h=0;}
                 return;
             }
-            this.stateTimer++;
+            this.stateTimer+=dt;
             if(this.stateTimer>200){this.stateTimer=0;this.attackState=Math.floor(Math.random()*3);}
             if(this.attackState===0){
-                this.x+=this.bossVx; if(this.x<300||this.x>750)this.bossVx*=-1;
+                this.x+=this.bossVx*dt; if(this.x<300||this.x>750)this.bossVx*=-1;
                 this.y=150+Math.sin(this.stateTimer*0.05)*30;
-                if(this.stateTimer%35===0) fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h,(Math.random()-0.5)*4,5));
+                if(Math.floor(this.stateTimer)%35===0&&Math.floor(this.stateTimer)!==this._lastBossShot0){this._lastBossShot0=Math.floor(this.stateTimer); fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h,(Math.random()-0.5)*4,5));}
             } else if(this.attackState===1){
-                this.x+=this.bossVx*1.5; if(this.x<100||this.x>950)this.bossVx*=-1;
+                this.x+=this.bossVx*1.5*dt; if(this.x<100||this.x>950)this.bossVx*=-1;
                 this.y=550-Math.abs(Math.sin(this.stateTimer*0.04)*400);
-                if(this.stateTimer%45===0){
+                if(Math.floor(this.stateTimer)%45===0&&Math.floor(this.stateTimer)!==this._lastBossShot1){this._lastBossShot1=Math.floor(this.stateTimer);
                     fireballs.push(new Fireball(this.x,this.y+this.h/2,-5,0));
                     fireballs.push(new Fireball(this.x+this.w,this.y+this.h/2,5,0));
                 }
             } else if(this.attackState===2){
                 this.x=520; this.y=450;
-                if(this.stateTimer===20||this.stateTimer===100)
+                if((Math.floor(this.stateTimer)===20||Math.floor(this.stateTimer)===100)&&Math.floor(this.stateTimer)!==this._lastBossShot2){this._lastBossShot2=Math.floor(this.stateTimer);
                     for(let i=-2;i<=2;i++) fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,i*2,-5));
+                }
             }
         } else if(this.type==='patrol'){
-            this.x+=3*this.dir;
+            this.x+=3*this.dir*dt;
             if(this.x>=this.maxX-this.w||this.x<=this.minX) this.dir*=-1;
         } else if(this.type==='fireball'){
-            this.timer++;
+            this.timer+=dt;
             if(this.timer>=this.rate){ this.timer=0; fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,this.fvx,this.fvy)); }
         }
     }
@@ -761,7 +769,7 @@ function setupInputs(){
 }
 
 function drawSelectionScreen(){
-    animationTimer+=0.04;
+    animationTimer+=0.04*dt;
     ctx.fillStyle='white'; ctx.font='bold 48px sans-serif'; ctx.textAlign='center';
     ctx.fillText('SCONFIGGI I SARCHIAPONI!',V_WIDTH/2,120);
     selectButtons.forEach((btn,index)=>{
@@ -795,20 +803,27 @@ function drawLevelSelectScreen(){
     ctx.fillText('⏱ COMINCIA DAL LIVELLO 1 PER INVIARE IL TUO TEMPO',V_WIDTH/2,720);
 }
 
-function loop(){
+let lastFrameTime = null;
+function loop(timestamp){
+    // Clamp delta to max 50ms (handles tab becoming active again, scroll-induced rAF bursts, etc.)
+    const delta = lastFrameTime === null ? 16.667 : Math.min(timestamp - lastFrameTime, 50);
+    lastFrameTime = timestamp;
+    // Normalise to 1.0 at 60fps so all physics stays frame-rate independent
+    const dt = delta / 16.667;
+
     ctx.clearRect(0,0,V_WIDTH,V_HEIGHT);
     if(gameState==='SELECT'){ drawSelectionScreen(); updateLbBtnVisibility(); }
     else if(gameState==='LEVEL_SELECT'){ drawLevelSelectScreen(); updateLbBtnVisibility(); }
     else if(gameState==='PLAY'){
-        player.update(platforms);
+        player.update(platforms, dt);
         fireballs=fireballs.filter(fb=>{
-            let active=fb.update(); fb.draw();
+            let active=fb.update(dt); fb.draw();
             let dX=Math.abs(fb.x-(player.x+player.w/2)), dY=Math.abs(fb.y-(player.y+player.h/2));
             if(dX<(player.w/2+fb.r)&&dY<(player.h/2+fb.r)) player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
             return active;
         });
         enemies.forEach(e=>{
-            e.update();
+            e.update(dt);
             if(!e.isDead&&player.x<e.x+e.w&&player.x+player.w>e.x&&player.y<e.y+e.h&&player.y+player.h>e.y){
                 if(e.type==='boss'){
                     if(player.vy>0&&player.y+player.h-player.vy<=e.y+40){ e.hp--; player.vy=-18; if(e.hp<=0){e.isDead=true;e.crownX=e.x+e.w/2;e.crownY=e.y;} }
