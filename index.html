@@ -459,7 +459,7 @@ class Enemy {
                 
                     let crownX = this.x + (this.w - crownW) / 2;
                 
-                    let crownY = this.y - crownH + (crownH * 0.45);
+                    let crownY = this.y - crownH + (crownH * 0.55);
                 
                     if (images.bossCrown && images.bossCrown.complete && images.bossCrown.width > 0) {
                         ctx.drawImage(images.bossCrown, crownX, crownY, crownW, crownH);
@@ -539,9 +539,9 @@ function loadLevel(idx) {
     if (idx >= LEVELS.length) { 
         if (isTimerActive) {
             let totalElapsed = Date.now() - startTime;
-            finalTimeText = "YOUR TIME: " + formatTime(totalElapsed);
+            finalTimeText = "TEMPO: " + formatTime(totalElapsed);
         } else {
-            finalTimeText = "TEST COMPLETION";
+            finalTimeText = "TEST";
         }
         document.getElementById('ui').style.display = 'none';
         gameState = 'END'; 
@@ -605,7 +605,7 @@ function handleSelectionClick(canvasX, canvasY) {
                     isTimerActive = true;
                 } else {
                     isTimerActive = false;
-                    document.getElementById('timerDisplay').innerText = "TEST MODE";
+                    document.getElementById('timerDisplay').innerText = "MODALITÀ TEST";
                 }
                 
                 loadLevel(btn.levelIndex);
