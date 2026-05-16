@@ -4,7 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>HO SI!</title>
-    <script src="https://mg-sdk.lootlocker.com/2.0.2/lootlocker.js"></script>
+    <script src="https://mg-sdk.lootlocker.com/2.0.2/lootlocker.js">
+        const LOOTLOCKER_API_KEY = "dev_18d2d40f2f544636ab42eafabaa8be02";
+        const LEADERBOARD_KEY = "main_leaderboard";
+        const GAME_VERSION = "1.0.0";
+        
+        let lootLockerInitialized = false;
+        
+        function initLootLocker() {
+            LootLocker.initialize(LOOTLOCKER_API_KEY, GAME_VERSION, true)
+                .then(() => LootLocker.startGuestSession())
+                .then((response) => {
+                    if (response.success) {
+                        console.log("LootLocker Session active. Player ID:", response.player_id);
+                        lootLockerInitialized = true;
+                        updateLivePlayerCount();
+                    } else {
+                        console.error("LootLocker failed to initialize:", response.error);
+                        document.getElementById('playerCountDisplay').innerText = "OFFLINE";
+                    }
+                })
+                .catch((err) => {
+                    console.error("LootLocker initialization exception:", err);
+                    document.getElementById('playerCountDisplay').innerText = "OFFLINE";
+                });
+        }
+        
+        function submitScoreToLeaderboard(scoreMs) {
+            if (!lootLockerInitialized) return;
+            LootLocker.submitScore(LEADERBOARD_KEY, scoreMs)
+                .then((response) => {
+                    if (response.success) {
+                        console.log("Time metric recorded successfully! Rank:", response.rank);
+                    } else {
+                        console.error("Failed to upload metric:", response);
+                    }
+                });
+        }
+        
+        function updateLivePlayerCount() {
+            if (!lootLockerInitialized) return;
+            LootLocker.getLeaderboard(LEADERBOARD_KEY, 0, 10)
+                .then((response) => {
+                    if (response.success && response.total_entries !== undefined) {
+                        document.getElementById('playerCountDisplay').innerText = response.total_entries;
+                    } else {
+                        document.getElementById('playerCountDisplay').innerText = "0";
+                    }
+                });
+        }
+    </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #111; font-family: sans-serif; }
@@ -44,55 +93,6 @@
 </div>
 
 <script>
-const LOOTLOCKER_API_KEY = "dev_18d2d40f2f544636ab42eafabaa8be02";
-const LEADERBOARD_KEY = "main_leaderboard";
-const GAME_VERSION = "1.0.0";
-
-let lootLockerInitialized = false;
-
-function initLootLocker() {
-    LootLocker.initialize(LOOTLOCKER_API_KEY, GAME_VERSION, true)
-        .then(() => LootLocker.startGuestSession())
-        .then((response) => {
-            if (response.success) {
-                console.log("LootLocker Session active. Player ID:", response.player_id);
-                lootLockerInitialized = true;
-                updateLivePlayerCount();
-            } else {
-                console.error("LootLocker failed to initialize:", response.error);
-                document.getElementById('playerCountDisplay').innerText = "OFFLINE";
-            }
-        })
-        .catch((err) => {
-            console.error("LootLocker initialization exception:", err);
-            document.getElementById('playerCountDisplay').innerText = "OFFLINE";
-        });
-}
-
-function submitScoreToLeaderboard(scoreMs) {
-    if (!lootLockerInitialized) return;
-    LootLocker.submitScore(LEADERBOARD_KEY, scoreMs)
-        .then((response) => {
-            if (response.success) {
-                console.log("Time metric recorded successfully! Rank:", response.rank);
-            } else {
-                console.error("Failed to upload metric:", response);
-            }
-        });
-}
-
-function updateLivePlayerCount() {
-    if (!lootLockerInitialized) return;
-    LootLocker.getLeaderboard(LEADERBOARD_KEY, 0, 10)
-        .then((response) => {
-            if (response.success && response.total_entries !== undefined) {
-                document.getElementById('playerCountDisplay').innerText = response.total_entries;
-            } else {
-                document.getElementById('playerCountDisplay').innerText = "0";
-            }
-        });
-}
-
 const CHARACTERS = {
     char1: {
         name: "CRIGUBE",
