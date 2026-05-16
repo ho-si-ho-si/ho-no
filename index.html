@@ -195,7 +195,7 @@
         <h2>🏆 CLASSIFICA GLOBALE</h2>
         <div id="lbStatus">Loading...</div>
         <table id="lbTable">
-            <thead><tr><th>#</th><th>NOME &amp; PERSONAGGIO</th><th>TEMPO</th></tr></thead>
+            <thead><tr><th>#</th><th>NOME GIOCATORE</th><th>TEMPO</th></tr></thead>
             <tbody id="lbBody"></tbody>
         </table>
         <button class="lb-close-btn" onclick="closeLeaderboard()">INDIETRO</button>
@@ -271,11 +271,22 @@ async function llStartGuestSession() {
     }
 }
 
-async function llSubmitScore(name, timeMs, charName, charPlayer) {
+async function llSubmitScore(name, timeMs) {
     const ok = await llStartGuestSession();
     if (!ok) return { success: false, error: "Nessuna sessione" };
 
-    const meta = JSON.stringify({ n: name, c: charName, p: charPlayer });
+    try {
+        await fetch(`${LOOTLOCKER_API}/v1/player/name`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "x-session-token": llSessionToken
+            },
+            body: JSON.stringify({ name: name })
+        });
+    } catch (e) {
+        console.warn("Could not set LootLocker profile name:", e);
+    }
     
     try {
         const res = await fetch(`${LOOTLOCKER_API}/leaderboards/${LOOTLOCKER_LEADERBOARD_KEY}/submit`, {
@@ -284,11 +295,7 @@ async function llSubmitScore(name, timeMs, charName, charPlayer) {
                 "Content-Type": "application/json",
                 "x-session-token": llSessionToken
             },
-            body: JSON.stringify({ 
-                score: parseInt(timeMs),
-                member_id: String(llPlayerId), 
-                metadata: meta 
-            })
+            body: JSON.stringify({ score: timeMs, member_id: String(llPlayerId) })
         });
         const data = await res.json();
         return data;
@@ -313,15 +320,11 @@ async function llGetLeaderboard(count = 15) {
 }
 
 async function llFetchPlayerCount() {
-    const ok = await llStartGuestSession();
-    if (!ok) return null;
-
     try {
         const res = await fetch(`${LOOTLOCKER_API}/v1/player/count`, {
             headers: {
                 "x-game-key": LOOTLOCKER_GAME_KEY,
-                "x-game-version": "1.0.0",
-                "x-session-token": llSessionToken
+                "x-game-version": "1.0.0"
             }
         });
         const data = await res.json();
@@ -368,21 +371,10 @@ async function openLeaderboard() {
 
     data.items.forEach((entry, i) => {
         const rank = i + 1;
-
         let displayName = "";
-        let charTag = "";
-        try {
-            if (entry.metadata) {
-                const meta = JSON.parse(entry.metadata);
-                if (meta && meta.n) displayName = meta.n;
-                if (meta && meta.c && meta.p) charTag = `<span style="font-size:13px;color:#aaa;margin-left:6px;">${escHtml(meta.c)} [${escHtml(meta.p)}]</span>`;
-            }
-        } catch (_) {
-            // metadata is a plain string, not JSON
-            if (entry.metadata && entry.metadata.trim()) displayName = entry.metadata.trim();
-        }
-        // Fallbacks: player name from LootLocker, then member_id, then ANONIMO
-        if (!displayName && entry.player && entry.player.name) displayName = entry.player.name;
+
+        // Read directly from the LootLocker profile account player name properties
+        if (entry.player && entry.player.name) displayName = entry.player.name;
         if (!displayName && entry.member_id) displayName = String(entry.member_id);
         if (!displayName) displayName = "ANONIMO";
 
@@ -390,7 +382,7 @@ async function openLeaderboard() {
         const medals = ["\u{1F947}","\u{1F948}","\u{1F949}"];
         const rankDisplay = rank <= 3 ? medals[rank-1] : `<span class="rank-badge">${rank}</span>`;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${rankDisplay}</td><td>${escHtml(displayName)}${charTag}</td><td>${timeStr}</td>`;
+        tr.innerHTML = `<td>${rankDisplay}</td><td>${escHtml(displayName)}</td><td>${timeStr}</td>`;
         tbody.appendChild(tr);
     });
 }
@@ -413,7 +405,7 @@ async function submitScore() {
     localStorage.setItem("ll_last_name", name);
 
     statusEl.textContent = "Inviando...";
-    const result = await llSubmitScore(name, pendingScoreMs, activeCharName, activeCharPlayer);
+    const result = await llSubmitScore(name, pendingScoreMs);
 
     if (result && result.success !== false) {
         statusEl.textContent = "✅ Tempo inviato!";
@@ -522,7 +514,7 @@ function loadGameplayAssets(callback) {
 const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 const V_WIDTH = 1200, V_HEIGHT = 800;
-let dt = 1; // delta-time normalised to 60fps; updated each frame by loop()
+let dt = 1;
 const gravity = 0.8;
 const keys    = { left: false, right: false };
 
@@ -795,7 +787,6 @@ function drawSelectionScreen(){
         else{ ctx.fillStyle=btn.id==='char1'?'#FF5733':btn.id==='char3'?'#2ECC71':'#3399FF'; ctx.fillRect(-60,-100,120,200); }
         ctx.restore();
     });
-    // hint
     ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='18px sans-serif';
     ctx.fillText('🏆 PREMI LA CLASSIFICA PER VEDERE I TEMPI GLOBALI',V_WIDTH/2,760);
 }
@@ -815,10 +806,8 @@ function drawLevelSelectScreen(){
 
 let lastFrameTime = null;
 function loop(timestamp){
-    // Clamp delta to max 50ms (handles tab becoming active again, scroll-induced rAF bursts, etc.)
     const delta = lastFrameTime === null ? 16.667 : Math.min(timestamp - lastFrameTime, 50);
     lastFrameTime = timestamp;
-    // Normalise to 1.0 at 60fps so all physics stays frame-rate independent
     dt = delta / 16.667;
 
     ctx.clearRect(0,0,V_WIDTH,V_HEIGHT);
