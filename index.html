@@ -48,7 +48,7 @@ let activePlayersCount = 0;
 let topScores = [];
 
 function initLootLocker() {
-    fetch("https://api.lootlocker.io/game/v1/player/auth/guest", {
+    fetch("https://api.development.lootlocker.io/game/v1/player/auth/guest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ game_key: LOOTLOCKER_GAME_KEY })
