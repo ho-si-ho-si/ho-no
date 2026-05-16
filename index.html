@@ -513,6 +513,7 @@ function loadGameplayAssets(callback) {
 const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 const V_WIDTH = 1200, V_HEIGHT = 800;
+let dt = 1; // delta-time normalised to 60fps; updated each frame by loop()
 const gravity = 0.8;
 const keys    = { left: false, right: false };
 
@@ -809,7 +810,7 @@ function loop(timestamp){
     const delta = lastFrameTime === null ? 16.667 : Math.min(timestamp - lastFrameTime, 50);
     lastFrameTime = timestamp;
     // Normalise to 1.0 at 60fps so all physics stays frame-rate independent
-    const dt = delta / 16.667;
+    dt = delta / 16.667;
 
     ctx.clearRect(0,0,V_WIDTH,V_HEIGHT);
     if(gameState==='SELECT'){ drawSelectionScreen(); updateLbBtnVisibility(); }
