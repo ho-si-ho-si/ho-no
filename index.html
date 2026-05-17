@@ -451,7 +451,7 @@ let currentLevel = 0;
 let gameState    = 'SELECT';
 let audioStarted = false;
 let animationTimer = 0;
-let deathCount = 0;
+let deathCount = -1;
 
 const selectButtons = [
     { id: 'char1', x: 100, y: 160, w: 250, h: 260 },
@@ -515,13 +515,6 @@ const LEVELS = [
     { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:150,y:480,w:200,h:30},{x:850,y:480,w:200,h:30},{x:450,y:300,w:300,h:30}], enemies:[{type:'boss',x:520,y:550,w:160,h:200}], flag:{x:1080,y:380} }
 ];
 
-function registerDeath() {
-    deathCount++;
-    const dDisp = document.getElementById('deathDisplay');
-    if (dDisp) dDisp.innerText = deathCount;
-    player.reset(LEVELS[currentLevel].playerStart.x, LEVELS[currentLevel].playerStart.y);
-}
-
 class Fireball {
     constructor(x,y,vx,vy){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.r=12; }
     update(dt=1){ this.x+=this.vx*dt; this.y+=this.vy*dt; return !(this.x<-100||this.x>V_WIDTH+100||this.y<-100||this.y>V_HEIGHT+100); }
@@ -535,13 +528,16 @@ class Player {
     constructor(x,y){ this.w=P_WIDTH; this.h=P_HEIGHT; this.reset(x,y); }
     reset(x,y){ 
         this.x=x; this.y=y; this.vx=0; this.vy=0; this.grounded=false; 
+        deathCount++; 
+        const dDisp = document.getElementById('deathDisplay');
+        if (dDisp) dDisp.innerText = deathCount;
     }
     update(platforms, dt=1){
         if(keys.left) this.vx=-7; else if(keys.right) this.vx=7; else this.vx=0;
         this.vy+=gravity*dt;
         this.x+=this.vx*dt; this.collide(platforms,'h');
         this.y+=this.vy*dt; this.grounded=false; this.collide(platforms,'v');
-        if(this.y>V_HEIGHT) registerDeath();
+        if(this.y>V_HEIGHT) this.reset(LEVELS[currentLevel].playerStart.x, LEVELS[currentLevel].playerStart.y);
     }
     collide(platforms,dir){
         platforms.forEach(p=>{
@@ -642,7 +638,11 @@ class Enemy {
                 
                 if((Math.floor(this.stateTimer)===20||Math.floor(this.stateTimer)===100)&&Math.floor(this.stateTimer)!==this._lastBossShot2){
                     this._lastBossShot2=Math.floor(this.stateTimer);
+                    // Existing upward shots
                     for(let i=-2;i<=2;i++) fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,i*2,-5));
+                    // New horizontal shots added
+                    fireballs.push(new Fireball(this.x, this.y+this.h/2, -6, 0));
+                    fireballs.push(new Fireball(this.x+this.w, this.y+this.h/2, 6, 0));
                 }
             }
             
@@ -696,6 +696,12 @@ class Enemy {
                 ctx.restore();
             }
             if(!this.isDead){
+                // Draw "RE SARCHIAPONE" Label over health bar
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('RE SARCHIAPONE', 600, 50);
+
                 ctx.fillStyle='#c0392b'; ctx.fillRect(400,60,400,20);
                 ctx.fillStyle='#2ecc71'; ctx.fillRect(400,60,400*(this.hp/this.maxHp),20);
                 ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.strokeRect(400,60,400,20);
@@ -907,7 +913,7 @@ function loop(timestamp){
             let active=fb.update(dt); fb.draw();
             let dX=Math.abs(fb.x-(player.x+player.w/2)), dY=Math.abs(fb.y-(player.y+player.h/2));
             if(dX<(player.w/2+fb.r)&&dY<(player.h/2+fb.r)) {
-                registerDeath();
+                player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
                 return false;
             }
             return active;
@@ -916,9 +922,25 @@ function loop(timestamp){
             e.update(dt);
             if(!e.isDead&&player.x<e.x+e.w&&player.x+player.w>e.x&&player.y<e.y+e.h&&player.y+player.h>e.y){
                 if(e.type==='boss'){
-                    if(player.vy>0&&player.y+player.h-player.vy<=e.y+40){ e.hp--; player.vy=-18; if(e.hp<=0){e.isDead=true;e.crownX=e.x+e.w/2;e.crownY=e.y;} }
-                    else registerDeath();
-                } else registerDeath();
+                    if(player.vy>0&&player.y+player.h-player.vy<=e.y+40){ 
+                        // If boss is in attack state 2 (shooting up), it is invincible
+                        if(e.attackState === 2) {
+                            player.vy=-18; // Make player bounce without dealing or taking damage
+                        } else {
+                            e.hp--; 
+                            player.vy=-18; 
+                            if(e.hp<=0){e.isDead=true;e.crownX=e.x+e.w/2;e.crownY=e.y;} 
+                        }
+                    }
+                    else {
+                        // Player takes damage/dies only if boss is NOT in the invincible state 2
+                        if(e.attackState === 2) {
+                            player.vy=-18; // Safe bounce from sides/bottom too during invincibility
+                        } else {
+                            player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
+                        }
+                    }
+                } else player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
             }
         });
         let isBossLevel=(currentLevel===9);
