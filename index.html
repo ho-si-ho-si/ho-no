@@ -552,6 +552,8 @@ class Enemy {
             this.isDead=false; this.deathTimer=0; this.crownX=0; this.crownY=0;
             this.crownVx=-4; this.crownVy=-15; this.crownAngle=0;
             this.initialW=this.w; this.initialH=this.h;
+            // Target coordinates for smooth, non-teleporting movement
+            this.targetX=this.x; this.targetY=this.y;
         }
     }
     update(dt=1){
@@ -566,35 +568,59 @@ class Enemy {
                 if(this.deathTimer>=100){this.w=0;this.h=0;}
                 return;
             }
+            
             this.stateTimer+=dt;
-            if(this.stateTimer>200){this.stateTimer=0;this.attackState=Math.floor(Math.random()*3);}
+            if(this.stateTimer>200){
+                this.stateTimer=0;
+                this.attackState=Math.floor(Math.random()*3);
+            }
+            
+            // Phase Logic & Target Position Mapping
             if(this.attackState===0){
-                this.x+=this.bossVx*dt; if(this.x<300||this.x>750)this.bossVx*=-1;
-                this.y=150+Math.sin(this.stateTimer*0.05)*30;
-                if(Math.floor(this.stateTimer)%35===0&&Math.floor(this.stateTimer)!==this._lastBossShot0){this._lastBossShot0=Math.floor(this.stateTimer); fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h,(Math.random()-0.5)*4,5));}
+                // Move back and forth horizontally
+                this.targetX += this.bossVx * dt; 
+                if(this.targetX > 750) { this.bossVx = -4; this.targetX = 750; }
+                if(this.targetX < 300) { this.bossVx = 4; this.targetX = 300; }
+                
+                this.targetY = 150 + Math.sin(this.stateTimer * 0.05) * 30;
+                
+                if(Math.floor(this.stateTimer)%35===0&&Math.floor(this.stateTimer)!==this._lastBossShot0){
+                    this._lastBossShot0=Math.floor(this.stateTimer); 
+                    fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h,(Math.random()-0.5)*4,5));
+                }
             } else if(this.attackState===1){
-                this.x+=this.bossVx*1.5*dt; if(this.x<100||this.x>950)this.bossVx*=-1;
-                this.y=550-Math.abs(Math.sin(this.stateTimer*0.04)*400);
-                if(Math.floor(this.stateTimer)%45===0&&Math.floor(this.stateTimer)!==this._lastBossShot1){this._lastBossShot1=Math.floor(this.stateTimer);
+                // Move wider and faster, swooping up and down
+                this.targetX += this.bossVx * 1.5 * dt; 
+                if(this.targetX > 950) { this.bossVx = -4; this.targetX = 950; }
+                if(this.targetX < 100) { this.bossVx = 4; this.targetX = 100; }
+                
+                this.targetY = 550 - Math.abs(Math.sin(this.stateTimer * 0.04) * 400);
+                
+                if(Math.floor(this.stateTimer)%45===0&&Math.floor(this.stateTimer)!==this._lastBossShot1){
+                    this._lastBossShot1=Math.floor(this.stateTimer);
                     fireballs.push(new Fireball(this.x,this.y+this.h/2,-5,0));
                     fireballs.push(new Fireball(this.x+this.w,this.y+this.h/2,5,0));
                 }
             } else if(this.attackState===2){
-                this.x=520; this.y=450;
-                if((Math.floor(this.stateTimer)===20||Math.floor(this.stateTimer)===100)&&Math.floor(this.stateTimer)!==this._lastBossShot2){this._lastBossShot2=Math.floor(this.stateTimer);
+                // Set target directly to center (smooth glide, no teleporting)
+                this.targetX = 520; 
+                this.targetY = 450;
+                
+                if((Math.floor(this.stateTimer)===20||Math.floor(this.stateTimer)===100)&&Math.floor(this.stateTimer)!==this._lastBossShot2){
+                    this._lastBossShot2=Math.floor(this.stateTimer);
                     for(let i=-2;i<=2;i++) fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,i*2,-5));
                 }
             }
+            
+            // Smoothly glide current positions toward target coordinates (Linear Interpolation)
+            // Lower values = slower glide, 0.15 gives a quick but completely continuous tracking behavior
+            this.x += (this.targetX - this.x) * 0.15 * dt;
+            this.y += (this.targetY - this.y) * 0.15 * dt;
+
         } else if(this.type==='patrol'){
             this.x += 3 * this.dir * dt;
-
-            if (this.x >= this.maxX - this.w) {
-                this.dir = -1;
-                this.x = this.maxX - this.w;
-            } else if (this.x <= this.minX) {
-                this.dir = 1;
-                this.x = this.minX;
-            }
+            if (this.x >= this.maxX - this.w) { this.dir = -1; this.x = this.maxX - this.w; }
+            else if (this.x <= this.minX) { this.dir = 1; this.x = this.minX; }
         } else if(this.type==='fireball'){
             this.timer+=dt;
             if(this.timer>=this.rate){ this.timer=0; fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,this.fvx,this.fvy)); }
@@ -603,9 +629,20 @@ class Enemy {
     draw(){
         if(this.type==='boss'){
             if(this.w>0&&this.h>0){
-                let bossImg=(this.attackState===2)?images.bossState2:images.bossState1;
+                // Base texture mapping rules
+                let bossImg = (this.attackState===2) ? images.bossState2 : images.bossState1;
+                
+                // State-Flicker Warning: If the phase timer is nearing its limit (last 40 frames),
+                // alternate rapidly every 6 frames to telegraph that an unexpected shift is coming.
+                if(this.stateTimer > 160) {
+                    if(Math.floor(this.stateTimer / 6) % 2 === 0) {
+                        bossImg = (bossImg === images.bossState2) ? images.bossState1 : images.bossState2;
+                    }
+                }
+
                 if(bossImg&&bossImg.complete&&bossImg.width>0) ctx.drawImage(bossImg,this.x,this.y,this.w,this.h);
-                else{ ctx.fillStyle=this.attackState===2?'#9b59b6':'#d35400'; ctx.fillRect(this.x,this.y,this.w,this.h); }
+                else{ ctx.fillStyle=(bossImg===images.bossState2)?'#9b59b6':'#d35400'; ctx.fillRect(this.x,this.y,this.w,this.h); }
+                
                 if(!this.isDead){
                     let cW=this.w*(256/418), cH=cW*(197/256);
                     let cX=this.x+(this.w-cW)/2, cY=this.y-cH+(cH*0.55);
