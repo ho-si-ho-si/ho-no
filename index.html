@@ -565,8 +565,10 @@ class Enemy {
             this.initialW=this.w; this.initialH=this.h;
             this.targetX=this.x; this.targetY=this.y;
             
+            this.attackState = 0;
             this.nextAttackState = 0;
             this.consecutiveStateCount = 1;
+            this.hasRolledWarningState = false;
         }
     }
     update(dt=1){
@@ -584,30 +586,20 @@ class Enemy {
             
             this.stateTimer += dt;
             
-            if (this.stateTimer > 200) {
-                this.stateTimer = 0;
+            if (this.stateTimer >= 160 && !this.hasRolledWarningState) {
+                this.hasRolledWarningState = true;
                 
                 let possibleStates = [0, 1, 2];
                 if (this.consecutiveStateCount >= 2) {
                     possibleStates = possibleStates.filter(s => s !== this.attackState);
                 }
                 
-                let rolledState = possibleStates[Math.floor(Math.random() * possibleStates.length)];
-                
-                if (rolledState === this.attackState) {
-                    this.consecutiveStateCount++;
-                } else {
-                    this.consecutiveStateCount = 1;
-                }
-                
-                this.attackState = rolledState;
-                this._lastBossShot0 = -1;
-                this._lastBossShot1 = -1;
-                this._lastBossShot2 = -1;
+                this.nextAttackState = possibleStates[Math.floor(Math.random() * possibleStates.length)];
             }
             
-            if(this.stateTimer > 200){
+            if (this.stateTimer >= 200) {
                 this.stateTimer = 0;
+                this.hasRolledWarningState = false;
                 
                 if (this.nextAttackState === this.attackState) {
                     this.consecutiveStateCount++;
@@ -616,6 +608,10 @@ class Enemy {
                 }
                 
                 this.attackState = this.nextAttackState; 
+                
+                this._lastBossShot0 = -1;
+                this._lastBossShot1 = -1;
+                this._lastBossShot2 = -1;
             }
             
             if(this.attackState===0){
