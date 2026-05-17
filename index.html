@@ -39,9 +39,19 @@
             margin-bottom: 18px;
             text-shadow: 0 0 20px #f1c40f88;
             font-family: sans-serif;
+            flex-shrink: 0;
+        }
+        .lb-table-container {
+            width: 640px;
+            max-width: 98vw;
+            max-height: 60vh;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3); 
         }
         #lbTable {
-            width: 640px;
+            width: 100%;
             max-width: 98vw;
             border-collapse: collapse;
         }
@@ -170,10 +180,14 @@
     <div id="leaderboardOverlay" class="overlay hidden">
         <h2>🏆 CLASSIFICA GLOBALE</h2>
         <div id="lbStatus">Loading...</div>
-        <table id="lbTable">
-            <thead><tr><th>#</th><th>NOME GIOCATORE (PERSONAGGIO)</th><th>TEMPO</th></tr></thead>
-            <tbody id="lbBody"></tbody>
-        </table>
+        
+        <div class="lb-table-container">
+            <table id="lbTable">
+                <thead><tr><th>#</th><th>NOME GIOCATORE</th><th>TEMPO</th></tr></thead>
+                <tbody id="lbBody"></tbody>
+            </table>
+        </div>
+        
         <button class="lb-close-btn" onclick="closeLeaderboard()">INDIETRO</button>
     </div>
 
