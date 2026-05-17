@@ -423,7 +423,7 @@ const CHARACTERS = {
 
 let ASSETS = {
     player: '', enemy: 'enemy.png', fireEnemy: 'fireenemy.png', flag: '',
-    bossState1: 'boss_state1.png', bossState2: 'boss_state2.png',
+    bossState1: 'boss_state1.png', bossState2: 'boss_state2.png', bossState3: 'boss_state3.png',
     bossCrown: 'boss_crown.png', flagGrey: ''
 };
 let activeVictoryText = "HO SI! VEDERE C!";
@@ -552,8 +552,9 @@ class Enemy {
             this.isDead=false; this.deathTimer=0; this.crownX=0; this.crownY=0;
             this.crownVx=-4; this.crownVy=-15; this.crownAngle=0;
             this.initialW=this.w; this.initialH=this.h;
-            // Target coordinates for smooth, non-teleporting movement
             this.targetX=this.x; this.targetY=this.y;
+            
+            this.nextAttackState = 0;
         }
     }
     update(dt=1){
@@ -570,14 +571,20 @@ class Enemy {
             }
             
             this.stateTimer+=dt;
-            if(this.stateTimer>200){
-                this.stateTimer=0;
-                this.attackState=Math.floor(Math.random()*3);
+
+            if(Math.floor(this.stateTimer) === 160 && this._lastStateRoll !== Math.floor(this.stateTimer)) {
+                this._lastStateRoll = Math.floor(this.stateTimer);
+                
+                let possibleStates = [0, 1, 2].filter(s => s !== this.attackState);
+                this.nextAttackState = possibleStates[Math.floor(Math.random() * possibleStates.length)];
             }
             
-            // Phase Logic & Target Position Mapping
+            if(this.stateTimer>200){
+                this.stateTimer=0;
+                this.attackState=this.nextAttackState; 
+            }
+            
             if(this.attackState===0){
-                // Move back and forth horizontally
                 this.targetX += this.bossVx * dt; 
                 if(this.targetX > 750) { this.bossVx = -4; this.targetX = 750; }
                 if(this.targetX < 300) { this.bossVx = 4; this.targetX = 300; }
@@ -589,7 +596,6 @@ class Enemy {
                     fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h,(Math.random()-0.5)*4,5));
                 }
             } else if(this.attackState===1){
-                // Move wider and faster, swooping up and down
                 this.targetX += this.bossVx * 1.5 * dt; 
                 if(this.targetX > 950) { this.bossVx = -4; this.targetX = 950; }
                 if(this.targetX < 100) { this.bossVx = 4; this.targetX = 100; }
@@ -602,7 +608,6 @@ class Enemy {
                     fireballs.push(new Fireball(this.x+this.w,this.y+this.h/2,5,0));
                 }
             } else if(this.attackState===2){
-                // Set target directly to center (smooth glide, no teleporting)
                 this.targetX = 520; 
                 this.targetY = 450;
                 
@@ -612,8 +617,6 @@ class Enemy {
                 }
             }
             
-            // Smoothly glide current positions toward target coordinates (Linear Interpolation)
-            // Lower values = slower glide, 0.15 gives a quick but completely continuous tracking behavior
             this.x += (this.targetX - this.x) * 0.15 * dt;
             this.y += (this.targetY - this.y) * 0.15 * dt;
 
@@ -627,21 +630,27 @@ class Enemy {
         }
     }
     draw(){
-        if(this.type==='boss'){
-            if(this.w>0&&this.h>0){
-                // Base texture mapping rules
-                let bossImg = (this.attackState===2) ? images.bossState2 : images.bossState1;
-                
-                // State-Flicker Warning: If the phase timer is nearing its limit (last 40 frames),
-                // alternate rapidly every 6 frames to telegraph that an unexpected shift is coming.
-                if(this.stateTimer > 160) {
-                    if(Math.floor(this.stateTimer / 6) % 2 === 0) {
-                        bossImg = (bossImg === images.bossState2) ? images.bossState1 : images.bossState2;
-                    }
+    if(this.type==='boss'){
+        if(this.w>0&&this.h>0){
+            const stateImages = [images.bossState1, images.bossState2, images.bossState3];
+            const stateColors = ['#d35400', '#9b59b6', '#8e44ad'];
+            
+            let bossImg = stateImages[this.attackState];
+            let fallbackColor = stateColors[this.attackState];
+            
+            if(this.stateTimer > 160) {
+                if(Math.floor(this.stateTimer / 6) % 2 === 0) {
+                    bossImg = stateImages[this.nextAttackState];
+                    fallbackColor = stateColors[this.nextAttackState];
                 }
+            }
 
-                if(bossImg&&bossImg.complete&&bossImg.width>0) ctx.drawImage(bossImg,this.x,this.y,this.w,this.h);
-                else{ ctx.fillStyle=(bossImg===images.bossState2)?'#9b59b6':'#d35400'; ctx.fillRect(this.x,this.y,this.w,this.h); }
+            if(bossImg&&bossImg.complete&&bossImg.width>0) {
+                ctx.drawImage(bossImg,this.x,this.y,this.w,this.h);
+            } else { 
+                ctx.fillStyle = fallbackColor; 
+                ctx.fillRect(this.x,this.y,this.w,this.h); 
+            }
                 
                 if(!this.isDead){
                     let cW=this.w*(256/418), cH=cW*(197/256);
