@@ -413,7 +413,7 @@ function escHtml(str) {
 }
 
 const CHARACTERS = {
-    char1: { name: "CRIGUBE",    player: "player.png",  flag: "flag.png", flagGrey: "flag_grey.png.",  victoryText: "HO SI! VEDERE C!" },
+    char1: { name: "CRIGUBE",    player: "player.png",  flag: "flag.png", flagGrey: "flag_grey.png",  victoryText: "HO SI! VEDERE C!" },
     char3: { name: "CALIENDO",   player: "player3.png", flag: "flag3.png", flagGrey: "flag_grey3.png", victoryText: "VOGLIO 100 NUMERI!" },
     char2: { name: "SKUNKSPRAY", player: "player2.png", flag: "flag2.png", flagGrey: "flag_grey2.png", victoryText: "SKUNK SPRAY OR LICORICE?" },
     char4: { name: "FRANCO",player: "player4.png",  flag: "flag4.png", flagGrey: "flag_grey4.png",   victoryText: "PORCO DIO!" },
@@ -586,8 +586,16 @@ class Enemy {
                 }
             }
         } else if(this.type==='patrol'){
-            this.x+=3*this.dir*dt;
-            if(this.x>=this.maxX-this.w||this.x<=this.minX) this.dir*=-1;
+            this.x += 3 * this.dir * dt;
+
+            if (this.x >= this.maxX - this.w) {
+                this.dir = -1;
+                this.x = this.maxX - this.w;
+            } else if (this.x <= this.minX) {
+                this.dir = 1;
+                this.x = this.minX;
+            }
+        }
         } else if(this.type==='fireball'){
             this.timer+=dt;
             if(this.timer>=this.rate){ this.timer=0; fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,this.fvx,this.fvy)); }
@@ -819,7 +827,7 @@ function loop(timestamp){
             let dX=Math.abs(fb.x-(player.x+player.w/2)), dY=Math.abs(fb.y-(player.y+player.h/2));
             if(dX<(player.w/2+fb.r)&&dY<(player.h/2+fb.r)) {
                 player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
-                return false; // This removes the fireball from the array after hitting the player
+                return false;
             }
             return active;
         });
