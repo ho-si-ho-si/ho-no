@@ -585,7 +585,7 @@ class Enemy {
             }
             
             this.stateTimer += dt;
-            
+
             if (this.stateTimer >= 160 && !this.hasRolledWarningState) {
                 this.hasRolledWarningState = true;
                 
@@ -597,7 +597,7 @@ class Enemy {
                 this.nextAttackState = possibleStates[Math.floor(Math.random() * possibleStates.length)];
             }
             
-            if (this.stateTimer >= 200) {
+            if(this.stateTimer >= 200){
                 this.stateTimer = 0;
                 this.hasRolledWarningState = false;
                 
@@ -609,6 +609,8 @@ class Enemy {
                 
                 this.attackState = this.nextAttackState; 
                 
+                this.nextAttackState = this.attackState;
+
                 this._lastBossShot0 = -1;
                 this._lastBossShot1 = -1;
                 this._lastBossShot2 = -1;
@@ -643,9 +645,7 @@ class Enemy {
                 
                 if((Math.floor(this.stateTimer)===20||Math.floor(this.stateTimer)===100)&&Math.floor(this.stateTimer)!==this._lastBossShot2){
                     this._lastBossShot2=Math.floor(this.stateTimer);
-                    // Existing upward shots
                     for(let i=-2;i<=2;i++) fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,i*2,-5));
-                    // New horizontal shots added
                     fireballs.push(new Fireball(this.x, this.y+this.h/2, -6, 0));
                     fireballs.push(new Fireball(this.x+this.w, this.y+this.h/2, 6, 0));
                 }
@@ -672,8 +672,8 @@ class Enemy {
             let bossImg = stateImages[this.attackState];
             let fallbackColor = stateColors[this.attackState];
             
-            if(this.stateTimer > 160) {
-                if(Math.floor(this.stateTimer / 6) % 2 === 0) {
+            if(this.stateTimer > 160 && this.nextAttackState !== this.attackState) {
+                if(Math.floor(this.stateTimer / 10) % 2 === 0) {
                     bossImg = stateImages[this.nextAttackState];
                     fallbackColor = stateColors[this.nextAttackState];
                 }
@@ -701,11 +701,22 @@ class Enemy {
                 ctx.restore();
             }
             if(!this.isDead){
-                // Draw "RE SARCHIAPONE" Label over health bar
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 16px sans-serif';
+                let hue = (animationTimer * 50) % 360;
+                
+                ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+                ctx.font = 'bold 22px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('RE SARCHIAPONE', 600, 50);
+                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                
+                ctx.fillText('RE SARCHIAPONE', 600, 45);
+                
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
 
                 ctx.fillStyle='#c0392b'; ctx.fillRect(400,60,400,20);
                 ctx.fillStyle='#2ecc71'; ctx.fillRect(400,60,400*(this.hp/this.maxHp),20);
@@ -928,9 +939,8 @@ function loop(timestamp){
             if(!e.isDead&&player.x<e.x+e.w&&player.x+player.w>e.x&&player.y<e.y+e.h&&player.y+player.h>e.y){
                 if(e.type==='boss'){
                     if(player.vy>0&&player.y+player.h-player.vy<=e.y+40){ 
-                        // If boss is in attack state 2 (shooting up), it is invincible
                         if(e.attackState === 2) {
-                            player.vy=-18; // Make player bounce without dealing or taking damage
+                            player.vy=-18; 
                         } else {
                             e.hp--; 
                             player.vy=-18; 
@@ -938,9 +948,8 @@ function loop(timestamp){
                         }
                     }
                     else {
-                        // Player takes damage/dies only if boss is NOT in the invincible state 2
                         if(e.attackState === 2) {
-                            player.vy=-18; // Safe bounce from sides/bottom too during invincibility
+                            player.vy=-18; 
                         } else {
                             player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
                         }
