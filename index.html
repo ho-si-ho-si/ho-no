@@ -445,6 +445,7 @@ let currentLevel = 0;
 let gameState    = 'SELECT';
 let audioStarted = false;
 let animationTimer = 0;
+let deathCount = 0;
 
 const selectButtons = [
     
@@ -520,7 +521,7 @@ class Fireball {
 
 class Player {
     constructor(x,y){ this.w=P_WIDTH; this.h=P_HEIGHT; this.reset(x,y); }
-    reset(x,y){ this.x=x; this.y=y; this.vx=0; this.vy=0; this.grounded=false; }
+    reset(x,y){ this.x=x; this.y=y; this.vx=0; this.vy=0; this.grounded=false; deathcount++; }
     update(platforms, dt=1){
         if(keys.left) this.vx=-7; else if(keys.right) this.vx=7; else this.vx=0;
         this.vy+=gravity*dt;
@@ -555,6 +556,7 @@ class Enemy {
             this.targetX=this.x; this.targetY=this.y;
             
             this.nextAttackState = 0;
+            this.consecutiveStateCount = 1;
         }
     }
     update(dt=1){
@@ -570,18 +572,31 @@ class Enemy {
                 return;
             }
             
-            this.stateTimer+=dt;
+            this.stateTimer += dt;
 
             if(Math.floor(this.stateTimer) === 160 && this._lastStateRoll !== Math.floor(this.stateTimer)) {
                 this._lastStateRoll = Math.floor(this.stateTimer);
                 
-                let possibleStates = [0, 1, 2].filter(s => s !== this.attackState);
-                this.nextAttackState = possibleStates[Math.floor(Math.random() * possibleStates.length)];
+                let possibleStates = [0, 1, 2];
+                
+                if (this.consecutiveStateCount >= 2) {
+                    possibleStates = possibleStates.filter(s => s !== this.attackState);
+                }
+                
+                let rolledState = possibleStates[Math.floor(Math.random() * possibleStates.length)];
+                this.nextAttackState = rolledState;
             }
             
-            if(this.stateTimer>200){
-                this.stateTimer=0;
-                this.attackState=this.nextAttackState; 
+            if(this.stateTimer > 200){
+                this.stateTimer = 0;
+                
+                if (this.nextAttackState === this.attackState) {
+                    this.consecutiveStateCount++;
+                } else {
+                    this.consecutiveStateCount = 1;
+                }
+                
+                this.attackState = this.nextAttackState; 
             }
             
             if(this.attackState===0){
