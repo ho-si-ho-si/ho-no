@@ -451,7 +451,7 @@ let currentLevel = 0;
 let gameState    = 'SELECT';
 let audioStarted = false;
 let animationTimer = 0;
-let deathCount = -1;
+let deathCount = 0;
 
 const selectButtons = [
     { id: 'char1', x: 100, y: 160, w: 250, h: 260 },
@@ -527,8 +527,10 @@ class Fireball {
 class Player {
     constructor(x,y){ this.w=P_WIDTH; this.h=P_HEIGHT; this.reset(x,y); }
     reset(x,y){ 
-        this.x=x; this.y=y; this.vx=0; this.vy=0; this.grounded=false; 
-        deathCount++; 
+        this.x=x; this.y=y; this.vx=0; this.vy=0; this.grounded=false;
+        if(!isInitialLoad) {
+            deathCount++;
+        }
         const dDisp = document.getElementById('deathDisplay');
         if (dDisp) dDisp.innerText = deathCount;
     }
@@ -754,12 +756,6 @@ function loadLevel(idx){
             showEndScreen();
         }
         return;
-    }
-
-    if(idx === 0) {
-        deathCount = 0;
-        const dDisp = document.getElementById('deathDisplay');
-        if (dDisp) dDisp.innerText = deathCount;
     }
 
     currentLevel=idx;
