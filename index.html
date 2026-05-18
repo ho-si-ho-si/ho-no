@@ -15,9 +15,22 @@
         .btn { width: 80px; height: 80px; background-color: rgba(255, 255, 255, 0.2); border: 4px solid rgba(255, 255, 255, 0.4); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 30px; touch-action: manipulation; }
         .btn:active { background-color: rgba(255, 255, 255, 0.5); }
         
-        #ui { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; display: none; }
+        #ui { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; display: none; }
         .ui-group { display: flex; gap: 30px; }
         #deathDisplay { color: #e74c3c; }
+        
+        #pauseBtn {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        #pauseBtn:active { background: rgba(255, 255, 255, 0.4); }
 
         .overlay {
             position: absolute;
@@ -32,7 +45,7 @@
         }
         .overlay.hidden { display: none; }
 
-        #leaderboardOverlay h2 {
+        #leaderboardOverlay h2, #pauseOverlay h2 {
             color: #f1c40f;
             font-size: 36px;
             letter-spacing: 4px;
@@ -82,8 +95,8 @@
             font-size: 13px;
             font-weight: bold;
         }
-        .lb-close-btn {
-            margin-top: 22px;
+        .lb-close-btn, .menu-btn {
+            margin-top: 12px;
             padding: 12px 40px;
             background: #f1c40f;
             color: #111;
@@ -93,8 +106,12 @@
             font-weight: bold;
             cursor: pointer;
             letter-spacing: 2px;
+            width: 280px;
+            text-align: center;
         }
-        .lb-close-btn:hover { background: #ffe066; }
+        .lb-close-btn:hover, .menu-btn:hover { background: #ffe066; }
+        .menu-btn.secondary { background: #333; color: #fff; }
+        .menu-btn.secondary:hover { background: #444; }
         #lbStatus { color: #aaa; font-size: 15px; margin-bottom: 10px; }
 
         #submitOverlay h2 {
@@ -142,10 +159,8 @@
         .submit-btn.secondary:hover { background: #444; }
         #submitStatus { color: #aaa; font-size: 15px; margin-top: 12px; min-height: 22px; }
 
-        #lbOpenBtn {
+        #lbOpenBtn, #resetGameBtn {
             position: absolute;
-            bottom: 22px;
-            right: 22px;
             background: rgba(241,196,15,0.15);
             border: 2px solid #f1c40f;
             color: #f1c40f;
@@ -158,7 +173,10 @@
             z-index: 50;
             display: none;
         }
+        #lbOpenBtn { bottom: 22px; right: 22px; }
+        #resetGameBtn { bottom: 22px; left: 22px; background: rgba(231, 76, 60, 0.15); border-color: #e74c3c; color: #e74c3c; }
         #lbOpenBtn:hover { background: rgba(241,196,15,0.3); }
+        #resetGameBtn:hover { background: rgba(231, 76, 60, 0.3); }
     </style>
 </head>
 <body>
@@ -170,12 +188,21 @@
             <div>MORTI: <span id="deathDisplay">0</span></div>
         </div>
         <div>TEMPO: <span id="timerDisplay">00:00.00</span></div>
+        <button id="pauseBtn" onclick="togglePause()">⏸ PAUSA</button>
     </div>
     <canvas id="gameCanvas"></canvas>
     
     <audio id="bgMusic" loop src="skunkorlicorice.mp3"></audio>
 
     <button id="lbOpenBtn" onclick="openLeaderboard()">🏆 CLASSIFICA</button>
+    <button id="resetGameBtn" onclick="resetToMenu()">🔄 GIOCA ANCORA</button>
+
+    <div id="pauseOverlay" class="overlay hidden">
+        <h2>GIOCO IN PAUSA</h2>
+        <button class="menu-btn" onclick="togglePause()">RIPRENDI</button>
+        <button class="menu-btn secondary" onclick="restartLevel()">RICOMINCIA LIVELLO</button>
+        <button class="menu-btn secondary" onclick="resetToMenu()">MENU SELEZIONE</button>
+    </div>
 
     <div id="leaderboardOverlay" class="overlay hidden">
         <h2>🏆 CLASSIFICA GLOBALE</h2>
@@ -222,6 +249,7 @@ const LOOTLOCKER_API             = "https://api.lootlocker.io/game";
 
 let llSessionToken = null;
 let llPlayerId     = null;
+let isPaused       = false;
 
 async function llStartGuestSession() {
     if (llSessionToken) return true;
@@ -328,7 +356,9 @@ function formatTime(ms) {
 
 function updateLbBtnVisibility() {
     const btn = document.getElementById('lbOpenBtn');
-    btn.style.display = (gameState === 'SELECT' || gameState === 'LEVEL_SELECT') ? 'block' : 'none';
+    const rBtn = document.getElementById('resetGameBtn');
+    btn.style.display = (gameState === 'SELECT' || gameState === 'LEVEL_SELECT' || gameState === 'END') ? 'block' : 'none';
+    rBtn.style.display = (gameState === 'END') ? 'block' : 'none';
 }
 
 async function openLeaderboard() {
@@ -382,6 +412,51 @@ function closeLeaderboard() {
     document.getElementById('leaderboardOverlay').classList.add('hidden');
 }
 
+function togglePause() {
+    if (gameState !== 'PLAY') return;
+    isPaused = !isPaused;
+    const overlay = document.getElementById('pauseOverlay');
+    const music = document.getElementById('bgMusic');
+    
+    if (isPaused) {
+        overlay.classList.remove('hidden');
+        if (audioStarted) music.pause();
+    } else {
+        overlay.classList.add('hidden');
+        if (audioStarted) music.play().catch(()=>{});
+    }
+}
+
+function restartLevel() {
+    isPaused = false;
+    document.getElementById('pauseOverlay').classList.add('hidden');
+    const music = document.getElementById('bgMusic');
+    if (audioStarted) music.play().catch(()=>{});
+    loadLevel(currentLevel);
+}
+
+function resetToMenu() {
+    isPaused = false;
+    isTimerActive = false;
+    deathCount = 0;
+    const dDisp = document.getElementById('deathDisplay');
+    if (dDisp) dDisp.innerText = deathCount;
+    
+    document.getElementById('pauseOverlay').classList.add('hidden');
+    document.getElementById('ui').style.display = 'none';
+    document.getElementById('touchControls').style.display = 'none';
+    
+    const music = document.getElementById('bgMusic');
+    if (audioStarted) {
+        music.pause();
+        music.currentTime = 0;
+        audioStarted = false;
+    }
+    
+    gameState = 'SELECT';
+    updateLbBtnVisibility();
+}
+
 function showSubmitOverlay(timeMs) {
     document.getElementById('submitTimeDisplay').textContent = "TEMPO: " + formatTime(timeMs) + " | MORTI: " + deathCount;
     document.getElementById('submitStatus').textContent = "";
@@ -425,7 +500,7 @@ async function openLeaderboardFromEnd() {
 
 function showEndScreen() {
     gameState = 'END';
-    document.getElementById('lbOpenBtn').style.display = 'block';
+    updateLbBtnVisibility();
 }
 
 function escHtml(str) {
@@ -483,6 +558,7 @@ for (let i = 0; i < 10; i++) {
     let row = Math.floor(i / cols), col = i % cols;
     levelSelectButtons.push({ levelIndex: i, x: startX + col * btnSpacing, y: startY + row * btnSpacing, w: 100, h: 100 });
 }
+const backBtnProps = { x: 475, y: 640, w: 250, h: 60 };
 
 function preloadSelectionImages(callback) {
     let loaded = 0;
@@ -764,9 +840,10 @@ function loadLevel(idx){
             finalTimeText = "MODALITÀ TEST";
         }
         document.getElementById('ui').style.display='none';
+        document.getElementById('touchControls').style.display='none';
         if(isTimerActive){
             gameState = 'SUBMIT';
-            document.getElementById('lbOpenBtn').style.display = 'none';
+            updateLbBtnVisibility();
             showSubmitOverlay(finalTimeMs);
         } else {
             showEndScreen();
@@ -797,7 +874,7 @@ function resize(){
 
 let audioUnlocked=false;
 function startAudio(){
-    if(!audioStarted){
+    if(!audioStarted && !isPaused){
         const music=document.getElementById('bgMusic');
         music.volume=0.4; music.loop=true;
         music.addEventListener('ended',function(){ this.currentTime=0; this.play().catch(()=>{}); },false);
@@ -826,6 +903,12 @@ function handleSelectionClick(canvasX,canvasY){
             }
         });
     } else if(gameState==='LEVEL_SELECT'){
+        if(canvasX>=backBtnProps.x && canvasX<=backBtnProps.x+backBtnProps.w && canvasY>=backBtnProps.y && canvasY<=backBtnProps.y+backBtnProps.h) {
+            gameState = 'SELECT';
+            updateLbBtnVisibility();
+            return;
+        }
+
         levelSelectButtons.forEach(btn=>{
             if(canvasX>=btn.x&&canvasX<=btn.x+btn.w&&canvasY>=btn.y&&canvasY<=btn.y+btn.h){
                 document.getElementById('ui').style.display='flex';
@@ -842,9 +925,10 @@ function handleSelectionClick(canvasX,canvasY){
     }
 }
 
-function setupInputs(){
+function setupInputs() {
     const bL=document.getElementById('btnLeft'), bR=document.getElementById('btnRight'), bJ=document.getElementById('btnJump');
     const getCanvasCoordinates=(e)=>{
+        if (isPaused) return;
         startAudio();
         const rect=canvas.getBoundingClientRect();
         const clientX=e.touches?e.touches[0].clientX:e.clientX;
@@ -856,15 +940,21 @@ function setupInputs(){
     canvas.addEventListener('mousedown',getCanvasCoordinates);
     canvas.addEventListener('touchstart',(e)=>{ e.preventDefault(); getCanvasCoordinates(e); });
 
-    bL.addEventListener('touchstart',(e)=>{e.preventDefault();keys.left=true;});
-    bL.addEventListener('touchend',(e)=>{e.preventDefault();keys.left=false;});
-    bL.addEventListener('mousedown',()=>{keys.left=true;}); bL.addEventListener('mouseup',()=>{keys.left=false;}); bL.addEventListener('mouseleave',()=>{keys.left=false;});
-    bR.addEventListener('touchstart',(e)=>{e.preventDefault();keys.right=true;});
-    bR.addEventListener('touchend',(e)=>{e.preventDefault();keys.right=false;});
-    bR.addEventListener('mousedown',()=>{keys.right=true;}); bR.addEventListener('mouseup',()=>{keys.right=false;}); bR.addEventListener('mouseleave',()=>{keys.right=false;});
-    const triggerJump=(e)=>{ if(e)e.preventDefault(); if(player&&player.grounded)player.vy=-22; };
+    bL.addEventListener('touchstart',(e)=>{e.preventDefault(); if(!isPaused) keys.left=true;});
+    bL.addEventListener('touchend',(e)=>{e.preventDefault(); keys.left=false;});
+    bL.addEventListener('mousedown',()=>{if(!isPaused) keys.left=true;}); bL.addEventListener('mouseup',()=>{keys.left=false;}); bL.addEventListener('mouseleave',()=>{keys.left=false;});
+    bR.addEventListener('touchstart',(e)=>{e.preventDefault(); if(!isPaused) keys.right=true;});
+    bR.addEventListener('touchend',(e)=>{e.preventDefault(); keys.right=false;});
+    bR.addEventListener('mousedown',()=>{if(!isPaused) keys.right=true;}); bR.addEventListener('mouseup',()=>{keys.right=false;}); bR.addEventListener('mouseleave',()=>{keys.right=false;});
+    const triggerJump=(e)=>{ if(e)e.preventDefault(); if(!isPaused && player && player.grounded) player.vy=-22; };
     bJ.addEventListener('touchstart',triggerJump); bJ.addEventListener('mousedown',triggerJump);
+    
     window.addEventListener('keydown',e=>{
+        if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+            togglePause();
+            return;
+        }
+        if (isPaused) return;
         startAudio();
         if(e.key==='ArrowLeft'||e.key==='a') keys.left=true;
         if(e.key==='ArrowRight'||e.key==='d') keys.right=true;
@@ -912,15 +1002,22 @@ function drawSelectionScreen(){
 
 function drawLevelSelectScreen(){
     ctx.fillStyle='white'; ctx.font='bold 48px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('SELEZIONA UN LIVELLO',V_WIDTH/2,160);
+    ctx.fillText('SELEZIONA UN LIVELLO',V_WIDTH/2,130);
     levelSelectButtons.forEach(btn=>{
         ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=3;
         ctx.fillRect(btn.x,btn.y,btn.w,btn.h); ctx.strokeRect(btn.x,btn.y,btn.w,btn.h);
         ctx.fillStyle='#fff'; ctx.font='bold 32px sans-serif';
         ctx.fillText(btn.levelIndex+1,btn.x+btn.w/2,btn.y+btn.h/2+11);
     });
+    
+    ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=2;
+    ctx.fillRect(backBtnProps.x, backBtnProps.y, backBtnProps.w, backBtnProps.h);
+    ctx.strokeRect(backBtnProps.x, backBtnProps.y, backBtnProps.w, backBtnProps.h);
+    ctx.fillStyle='#aaa'; ctx.font='bold 20px sans-serif';
+    ctx.fillText('TORNA INDIETRO', backBtnProps.x + backBtnProps.w/2, backBtnProps.y + backBtnProps.h/2 + 7);
+
     ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='18px sans-serif';
-    ctx.fillText('⏱ COMINCIA DAL LIVELLO 1 PER INVIARE IL TUO TEMPO',V_WIDTH/2,720);
+    ctx.fillText('⏱ COMINCIA DAL LIVELLO 1 PER INVIARE IL TUO TEMPO',V_WIDTH/2,740);
 }
 
 let lastFrameTime = null;
@@ -929,53 +1026,62 @@ function loop(timestamp){
     lastFrameTime = timestamp;
     dt = delta / 16.667;
 
-    animationTimer += 0.04 * dt;
+    if (!isPaused) {
+        animationTimer += 0.04 * dt;
+    }
 
     ctx.clearRect(0,0,V_WIDTH,V_HEIGHT);
     if(gameState==='SELECT'){ drawSelectionScreen(); updateLbBtnVisibility(); }
     else if(gameState==='LEVEL_SELECT'){ drawLevelSelectScreen(); updateLbBtnVisibility(); }
     else if(gameState==='PLAY'){
-        player.update(platforms, dt);
-        fireballs=fireballs.filter(fb=>{
-            let active=fb.update(dt); fb.draw();
-            let dX=Math.abs(fb.x-(player.x+player.w/2)), dY=Math.abs(fb.y-(player.y+player.h/2));
-            if(dX<(player.w/2+fb.r)&&dY<(player.h/2+fb.r)) {
-                player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
-                return false;
-            }
-            return active;
-        });
-        enemies.forEach(e=>{
-            e.update(dt);
-            if(!e.isDead&&player.x<e.x+e.w&&player.x+player.w>e.x&&player.y<e.y+e.h&&player.y+player.h>e.y){
-                if(e.type==='boss'){
-                    if(player.vy>0&&player.y+player.h-player.vy<=e.y+40){ 
-                        if(e.attackState === 2) {
-                            player.vy=-18; 
-                        } else {
-                            e.hp--; 
-                            player.vy=-18; 
-                            if(e.hp<=0){e.isDead=true;e.crownX=e.x+e.w/2;e.crownY=e.y;} 
+        if (!isPaused) {
+            player.update(platforms, dt);
+            fireballs=fireballs.filter(fb=>{
+                let active=fb.update(dt);
+                let dX=Math.abs(fb.x-(player.x+player.w/2)), dY=Math.abs(fb.y-(player.y+player.h/2));
+                if(dX<(player.w/2+fb.r)&&dY<(player.h/2+fb.r)) {
+                    player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
+                    return false;
+                }
+                return active;
+            });
+            enemies.forEach(e=>{
+                e.update(dt);
+                if(!e.isDead&&player.x<e.x+e.w&&player.x+player.w>e.x&&player.y<e.y+e.h&&player.y+player.h>e.y){
+                    if(e.type==='boss'){
+                        if(player.vy>0&&player.y+player.h-player.vy<=e.y+40){ 
+                            if(e.attackState === 2) {
+                                player.vy=-18; 
+                            } else {
+                                e.hp--; 
+                                player.vy=-18; 
+                                if(e.hp<=0){e.isDead=true;e.crownX=e.x+e.w/2;e.crownY=e.y;} 
+                            }
                         }
-                    }
-                    else {
-                        if(e.attackState === 2) {
-                            player.vy=-18; 
-                        } else {
-                            player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
+                        else {
+                            if(e.attackState === 2) {
+                                player.vy=-18; 
+                            } else {
+                                player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
+                            }
                         }
-                    }
-                } else player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
+                    } else player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
+                }
+            });
+            let isBossLevel=(currentLevel===9);
+            let bossActive=enemies.some(e=>e.type==='boss'&&(!e.isDead||e.deathTimer<100));
+            if(!bossActive||!isBossLevel){
+                if(player.x<flag.x+60&&player.x+player.w>flag.x&&player.y<flag.y+100&&player.y+player.h>flag.y){ currentLevel++; loadLevel(currentLevel); }
             }
-        });
-        let isBossLevel=(currentLevel===9);
-        let bossActive=enemies.some(e=>e.type==='boss'&&(!e.isDead||e.deathTimer<100));
-        if(!bossActive||!isBossLevel){
-            if(player.x<flag.x+60&&player.x+player.w>flag.x&&player.y<flag.y+100&&player.y+player.h>flag.y){ currentLevel++; loadLevel(currentLevel); }
+            if(isTimerActive){ let el=Date.now()-startTime; document.getElementById('timerDisplay').innerText=formatTime(el); }
         }
-        if(isTimerActive){ let el=Date.now()-startTime; document.getElementById('timerDisplay').innerText=formatTime(el); }
+
+        fireballs.forEach(fb => fb.draw());
         platforms.forEach(p=>{ ctx.fillStyle='#34495e'; ctx.fillRect(p.x,p.y,p.w,p.h); });
         enemies.forEach(e=>e.draw()); player.draw();
+        
+        let isBossLevel=(currentLevel===9);
+        let bossActive=enemies.some(e=>e.type==='boss'&&(!e.isDead||e.deathTimer<100));
         if(!bossActive||!isBossLevel){
             if(images.flag&&images.flag.complete&&images.flag.width>0) ctx.drawImage(images.flag,flag.x,flag.y,60,100);
             else{ ctx.fillStyle='#f1c40f'; ctx.fillRect(flag.x,flag.y,60,100); }
