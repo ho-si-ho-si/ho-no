@@ -23,7 +23,7 @@
             display: flex; 
             flex-direction: row;
             justify-content: space-between; 
-            align-items: flex-start;
+            align-items: center;
             flex-wrap: wrap;
             gap: 10px;
             color: #fff; 
@@ -36,18 +36,12 @@
         }
         .ui-group { 
             display: flex; 
-            flex-direction: column;
-            gap: 5px;
-        }
-        .ui-right-panel {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 10px;
+            gap: clamp(10px, 3vw, 25px);
         }
         #timerDisplay {
             white-space: nowrap;
         }
+        .ui-group { display: flex; gap: 30px; }
         #deathDisplay { color: #e74c3c; }
         
         #pauseBtn {
@@ -55,52 +49,13 @@
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid rgba(255, 255, 255, 0.4);
             color: white;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            padding: 6px 14px;
+            padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
         }
         #pauseBtn:active { background: rgba(255, 255, 255, 0.4); }
-
-        #cortisoloIndicator {
-            position: relative;
-            width: clamp(110px, 15vw, 160px);
-            height: clamp(65px, 9vw, 95px);
-            background: rgba(0, 0, 0, 0.6);
-            border: 2px solid #333;
-            border-radius: 8px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding-top: 4px;
-        }
-        #cortisoloLabel {
-            font-size: clamp(10px, 1.2vw, 13px);
-            color: #f1c40f;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
-        }
-        #gaugeWrapper {
-            position: relative;
-            width: 90%;
-            height: auto;
-        }
-        #gaugeArc {
-            width: 100%;
-            display: block;
-        }
-        #gaugeNeedle {
-            position: absolute;
-            bottom: 6%;
-            right: 50%;
-            width: 45%;
-            transform-origin: 100% 50%;
-            transform: rotate(0deg);
-            transition: transform 0.2s ease-out;
-        }
 
         .overlay {
             position: absolute;
@@ -256,19 +211,9 @@
         <div class="ui-group">
             <div>LIVELLO: <span id="lvlDisplay">1</span></div>
             <div>MORTI: <span id="deathDisplay">0</span></div>
-            <button id="pauseBtn" onclick="togglePause()">⏸ PAUSA</button>
         </div>
-        
-        <div class="ui-right-panel">
-            <div>TEMPO: <span id="timerDisplay">00:00.00</span></div>
-            <div id="cortisoloIndicator">
-                <div id="cortisoloLabel">CORTISOLO</div>
-                <div id="gaugeWrapper">
-                    <img id="gaugeArc" src="image_2ba7a6.png" alt="Gauge Background">
-                    <img id="gaugeNeedle" src="image_2ba7bf.png" alt="Indicator Needle">
-                </div>
-            </div>
-        </div>
+        <div>TEMPO: <span id="timerDisplay">00:00.00</span></div>
+        <button id="pauseBtn" onclick="togglePause()">⏸ PAUSA</button>
     </div>
     <canvas id="gameCanvas"></canvas>
     
@@ -618,6 +563,7 @@ const images = {};
 const uiImages = {};
 let currentLevel = 0;
 let gameState    = 'SELECT';
+let audioStarted = false;
 let animationTimer = 0;
 let deathCount = 0;
 
@@ -683,17 +629,6 @@ const LEVELS = [
     { playerStart:{x:80,y:140}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:0,w:1200,h:40},{x:0,y:0,w:40,h:800},{x:1160,y:0,w:40,h:800},{x:40,y:260,w:950,h:40},{x:220,y:500,w:940,h:40}], enemies:[{type:'fireball',x:600,y:45,vx:0,vy:4,rate:90},{type:'fireball',x:1100,y:380,vx:-6,vy:0,rate:65},{type:'fireball',x:50,y:620,vx:5,vy:0,rate:80}], flag:{x:1080,y:650} },
     { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:150,y:480,w:200,h:30},{x:850,y:480,w:200,h:30},{x:450,y:300,w:300,h:30}], enemies:[{type:'boss',x:520,y:550,w:160,h:200}], flag:{x:1080,y:380} }
 ];
-
-function updateCortisoloNeedle(value) {
-    const minAngle = -180;
-    const maxAngle = 0;
-    const targetAngle = minAngle + ((value / 100) * (maxAngle - minAngle));
-    
-    const needle = document.getElementById('gaugeNeedle');
-    if (needle) {
-        needle.style.transform = `rotate(${targetAngle}deg)`;
-    }
-}
 
 class Fireball {
     constructor(x,y,vx,vy){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.r=12; }
@@ -848,28 +783,28 @@ class Enemy {
         }
     }
     draw(){
-        if(this.type==='boss'){
-            if(this.w>0&&this.h>0){
-                const stateImages = [images.bossState1, images.bossState2, images.bossState3];
-                const stateColors = ['#d35400', '#9b59b6', '#8e44ad'];
-                
-                let bossImg = stateImages[this.attackState];
-                let fallbackColor = stateColors[this.attackState];
-                
-                if(this.stateTimer > 160 && this.nextAttackState !== this.attackState) {
-                    if(Math.floor(this.stateTimer / 10) % 2 === 0) {
-                        bossImg = stateImages[this.nextAttackState];
-                        fallbackColor = stateColors[this.nextAttackState];
-                    }
+    if(this.type==='boss'){
+        if(this.w>0&&this.h>0){
+            const stateImages = [images.bossState1, images.bossState2, images.bossState3];
+            const stateColors = ['#d35400', '#9b59b6', '#8e44ad'];
+            
+            let bossImg = stateImages[this.attackState];
+            let fallbackColor = stateColors[this.attackState];
+            
+            if(this.stateTimer > 160 && this.nextAttackState !== this.attackState) {
+                if(Math.floor(this.stateTimer / 10) % 2 === 0) {
+                    bossImg = stateImages[this.nextAttackState];
+                    fallbackColor = stateColors[this.nextAttackState];
                 }
+            }
 
-                if(bossImg&&bossImg.complete&&bossImg.width>0) {
-                    ctx.drawImage(bossImg,this.x,this.y,this.w,this.h);
-                } else { 
-                    ctx.fillStyle = fallbackColor; 
-                    ctx.fillRect(this.x,this.y,this.w,this.h); 
-                }
-                    
+            if(bossImg&&bossImg.complete&&bossImg.width>0) {
+                ctx.drawImage(bossImg,this.x,this.y,this.w,this.h);
+            } else { 
+                ctx.fillStyle = fallbackColor; 
+                ctx.fillRect(this.x,this.y,this.w,this.h); 
+            }
+                
                 if(!this.isDead){
                     let cW=this.w*(256/418), cH=cW*(197/256);
                     let cX=this.x+(this.w-cW)/2, cY=this.y-cH+(cH*0.55);
@@ -962,6 +897,7 @@ function resize(){
     ctx.setTransform(scale,0,0,scale,0,0);
 }
 
+let audioUnlocked=false;
 function startAudio(){
     if(!audioStarted && !isPaused){
         const music=document.getElementById('bgMusic');
@@ -1007,8 +943,6 @@ function handleSelectionClick(canvasX,canvasY){
                 else{ isTimerActive=false; document.getElementById('timerDisplay').innerText="MODALITÀ TEST"; }
                 loadLevel(btn.levelIndex);
                 gameState='PLAY';
-                
-                updateCortisoloNeedle(85);
             }
         });
     } else if(gameState==='END'){
@@ -1033,42 +967,27 @@ function setupInputs() {
 
     bL.addEventListener('touchstart',(e)=>{e.preventDefault(); if(!isPaused) keys.left=true;});
     bL.addEventListener('touchend',(e)=>{e.preventDefault(); keys.left=false;});
-    bL.addEventListener('mousedown',(e)=>{e.preventDefault(); if(!isPaused) keys.left=true;}); 
-    bL.addEventListener('mouseup',()=>{keys.left=false;}); 
-    bL.addEventListener('mouseleave',()=>{keys.left=false;});
-    
+    bL.addEventListener('mousedown',()=>{if(!isPaused) keys.left=true;}); bL.addEventListener('mouseup',()=>{keys.left=false;}); bL.addEventListener('mouseleave',()=>{keys.left=false;});
     bR.addEventListener('touchstart',(e)=>{e.preventDefault(); if(!isPaused) keys.right=true;});
     bR.addEventListener('touchend',(e)=>{e.preventDefault(); keys.right=false;});
-    bR.addEventListener('mousedown',(e)=>{e.preventDefault(); if(!isPaused) keys.right=true;}); 
-    bR.addEventListener('mouseup',()=>{keys.right=false;}); 
-    bR.addEventListener('mouseleave',()=>{keys.right=false;});
-    
+    bR.addEventListener('mousedown',()=>{if(!isPaused) keys.right=true;}); bR.addEventListener('mouseup',()=>{keys.right=false;}); bR.addEventListener('mouseleave',()=>{keys.right=false;});
     const triggerJump=(e)=>{ if(e)e.preventDefault(); if(!isPaused && player && player.grounded) player.vy=-22; };
-    bJ.addEventListener('touchstart',triggerJump); 
-    bJ.addEventListener('mousedown',triggerJump);
+    bJ.addEventListener('touchstart',triggerJump); bJ.addEventListener('mousedown',triggerJump);
     
     window.addEventListener('keydown',e=>{
-        if(document.activeElement === document.getElementById('playerNameInput')) return;
-
         if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
             togglePause();
             return;
         }
         if (isPaused) return;
-        
-        if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
-            e.preventDefault();
-        }
-
         startAudio();
-        if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=true;
-        if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=true;
-        if((e.key===' '||e.key==='ArrowUp'||e.key==='w'||e.key==='W')&&player&&player.grounded) player.vy=-22;
+        if(e.key==='ArrowLeft'||e.key==='a') keys.left=true;
+        if(e.key==='ArrowRight'||e.key==='d') keys.right=true;
+        if((e.key===' '||e.key==='ArrowUp'||e.key==='w')&&player&&player.grounded) player.vy=-22;
     });
-    
     window.addEventListener('keyup',e=>{
-        if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=false;
-        if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=false;
+        if(e.key==='ArrowLeft'||e.key==='a') keys.left=false;
+        if(e.key==='ArrowRight'||e.key==='d') keys.right=false;
     });
 }
 
