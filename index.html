@@ -23,7 +23,7 @@
             display: flex; 
             flex-direction: row;
             justify-content: space-between; 
-            align-items: center;
+            align-items: flex-start;
             flex-wrap: wrap;
             gap: 10px;
             color: #fff; 
@@ -36,66 +36,72 @@
         }
         .ui-group { 
             display: flex; 
-            gap: clamp(10px, 3vw, 25px);
-            align-items: center;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .ui-right-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
         }
         #timerDisplay {
             white-space: nowrap;
         }
         #deathDisplay { color: #e74c3c; }
         
-        /* Cortisolo Meter Styles */
-        #cortisoloContainer {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 4px 10px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        #cortisoloLabel {
-            font-size: 11px;
-            letter-spacing: 1px;
-            color: #f1c40f;
-            margin-bottom: 2px;
-            text-shadow: 1px 1px #000;
-        }
-        #meterWrapper {
-            position: relative;
-            width: 100px;
-            height: 50px;
-            overflow: hidden;
-        }
-        #gaugeImg {
-            width: 100px;
-            height: 50px;
-            display: block;
-        }
-        #needleImg {
-            position: absolute;
-            width: 50px;
-            height: 16px;
-            bottom: 0px;
-            left: 50px;
-            transform-origin: 41px 8px; /* Anchor point near the circular base of the needle */
-            transform: rotate(180deg);
-            transition: transform 0.1s linear;
-        }
-
         #pauseBtn {
             pointer-events: auto;
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid rgba(255, 255, 255, 0.4);
             color: white;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 8px;
             cursor: pointer;
         }
         #pauseBtn:active { background: rgba(255, 255, 255, 0.4); }
+
+        /* Responsive Indicator Container placed cleanly on the side */
+        #cortisoloIndicator {
+            position: relative;
+            width: clamp(110px, 15vw, 160px);
+            height: clamp(65px, 9vw, 95px);
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 4px;
+        }
+        #cortisoloLabel {
+            font-size: clamp(10px, 1.2vw, 13px);
+            color: #f1c40f;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        #gaugeWrapper {
+            position: relative;
+            width: 90%;
+            height: auto;
+        }
+        #gaugeArc {
+            width: 100%;
+            display: block;
+        }
+        #gaugeNeedle {
+            position: absolute;
+            bottom: 6%;
+            right: 50%;
+            width: 45%;
+            transform-origin: 100% 50%;
+            transform: rotate(0deg); /* Adjust rotation dynamically via JS (e.g., -180deg to 0deg) */
+            transition: transform 0.2s ease-out;
+        }
 
         .overlay {
             position: absolute;
@@ -251,19 +257,18 @@
         <div class="ui-group">
             <div>LIVELLO: <span id="lvlDisplay">1</span></div>
             <div>MORTI: <span id="deathDisplay">0</span></div>
+            <button id="pauseBtn" onclick="togglePause()">⏸ PAUSA</button>
         </div>
         
-        <div id="cortisoloContainer">
-            <div id="cortisoloLabel">CORTISOLO</div>
-            <div id="meterWrapper">
-                <img id="gaugeImg" src="cortisolo.png" alt="Gauge">
-                <img id="needleImg" src="indicator.png" alt="Needle">
-            </div>
-        </div>
-
-        <div class="ui-group">
+        <div class="ui-right-panel">
             <div>TEMPO: <span id="timerDisplay">00:00.00</span></div>
-            <button id="pauseBtn" onclick="togglePause()">⏸ PAUSA</button>
+            <div id="cortisoloIndicator">
+                <div id="cortisoloLabel">CORTISOLO</div>
+                <div id="gaugeWrapper">
+                    <img id="gaugeArc" src="image_2ba7a6.png" alt="Gauge Background">
+                    <img id="gaugeNeedle" src="image_2ba7bf.png" alt="Indicator Needle">
+                </div>
+            </div>
         </div>
     </div>
     <canvas id="gameCanvas"></canvas>
@@ -681,6 +686,17 @@ const LEVELS = [
     { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:150,y:480,w:200,h:30},{x:850,y:480,w:200,h:30},{x:450,y:300,w:300,h:30}], enemies:[{type:'boss',x:520,y:550,w:160,h:200}], flag:{x:1080,y:380} }
 ];
 
+function updateCortisoloNeedle(value) {
+    const minAngle = -180;
+    const maxAngle = 0;
+    const targetAngle = minAngle + ((value / 100) * (maxAngle - minAngle));
+    
+    const needle = document.getElementById('gaugeNeedle');
+    if (needle) {
+        needle.style.transform = `rotate(${targetAngle}deg)`;
+    }
+}
+
 class Fireball {
     constructor(x,y,vx,vy){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.r=12; }
     update(dt=1){ this.x+=this.vx*dt; this.y+=this.vy*dt; return !(this.x<-100||this.x>V_WIDTH+100||this.y<-100||this.y>V_HEIGHT+100); }
@@ -904,47 +920,6 @@ class Enemy {
 
 let player, enemies=[], platforms=[], fireballs=[], flag=null;
 
-function updateCortisoloMeter() {
-    if (gameState !== 'PLAY' || !player) {
-        document.getElementById('cortisoloContainer').style.display = 'none';
-        return;
-    }
-    document.getElementById('cortisoloContainer').style.display = 'flex';
-
-    let minDistance = Infinity;
-    const pCenterX = player.x + player.w / 2;
-    const pCenterY = player.y + player.h / 2;
-
-    enemies.forEach(e => {
-        if (e.type === 'boss' && e.isDead) return;
-        if (e.type === 'fireball') return;
-        
-        const eCenterX = e.x + e.w / 2;
-        const eCenterY = e.y + e.h / 2;
-        const dist = Math.hypot(pCenterX - eCenterX, pCenterY - eCenterY);
-        if (dist < minDistance) minDistance = dist;
-    });
-
-    fireballs.forEach(fb => {
-        const dist = Math.hypot(pCenterX - fb.x, pCenterY - fb.y);
-        if (dist < minDistance) minDistance = dist;
-    });
-
-    const maxRadarDist = 400;
-    const minRadarDist = 40;
-    
-    let clampedDist = Math.max(minRadarDist, Math.min(maxRadarDist, minDistance));
-    
-    let stressFactor = 1 - ((clampedDist - minRadarDist) / (maxRadarDist - minRadarDist));
-
-    let targetAngle = 170 - (stressFactor * 160);
-
-    const needle = document.getElementById('needleImg');
-    if (needle) {
-        needle.style.transform = `rotate(${targetAngle}deg)`;
-    }
-}
-
 function loadLevel(idx){
     fireballs=[];
     if(idx>=LEVELS.length){
@@ -989,7 +964,7 @@ function resize(){
     ctx.setTransform(scale,0,0,scale,0,0);
 }
 
-let audioUnlocked=false;
+let audioStarted=false;
 function startAudio(){
     if(!audioStarted && !isPaused){
         const music=document.getElementById('bgMusic');
@@ -1035,6 +1010,8 @@ function handleSelectionClick(canvasX,canvasY){
                 else{ isTimerActive=false; document.getElementById('timerDisplay').innerText="MODALITÀ TEST"; }
                 loadLevel(btn.levelIndex);
                 gameState='PLAY';
+                
+                updateCortisoloNeedle(85);
             }
         });
     } else if(gameState==='END'){
@@ -1059,27 +1036,42 @@ function setupInputs() {
 
     bL.addEventListener('touchstart',(e)=>{e.preventDefault(); if(!isPaused) keys.left=true;});
     bL.addEventListener('touchend',(e)=>{e.preventDefault(); keys.left=false;});
-    bL.addEventListener('mousedown',()=>{if(!isPaused) keys.left=true;}); bL.addEventListener('mouseup',()=>{keys.left=false;}); bL.addEventListener('mouseleave',()=>{keys.left=false;});
+    bL.addEventListener('mousedown',(e)=>{e.preventDefault(); if(!isPaused) keys.left=true;}); 
+    bL.addEventListener('mouseup',()=>{keys.left=false;}); 
+    bL.addEventListener('mouseleave',()=>{keys.left=false;});
+    
     bR.addEventListener('touchstart',(e)=>{e.preventDefault(); if(!isPaused) keys.right=true;});
     bR.addEventListener('touchend',(e)=>{e.preventDefault(); keys.right=false;});
-    bR.addEventListener('mousedown',()=>{if(!isPaused) keys.right=true;}); bR.addEventListener('mouseup',()=>{keys.right=false;}); bR.addEventListener('mouseleave',()=>{keys.right=false;});
+    bR.addEventListener('mousedown',(e)=>{e.preventDefault(); if(!isPaused) keys.right=true;}); 
+    bR.addEventListener('mouseup',()=>{keys.right=false;}); 
+    bR.addEventListener('mouseleave',()=>{keys.right=false;});
+    
     const triggerJump=(e)=>{ if(e)e.preventDefault(); if(!isPaused && player && player.grounded) player.vy=-22; };
-    bJ.addEventListener('touchstart',triggerJump); bJ.addEventListener('mousedown',triggerJump);
+    bJ.addEventListener('touchstart',triggerJump); 
+    bJ.addEventListener('mousedown',triggerJump);
     
     window.addEventListener('keydown',e=>{
+        if(document.activeElement === document.getElementById('playerNameInput')) return;
+
         if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
             togglePause();
             return;
         }
         if (isPaused) return;
+        
+        if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+            e.preventDefault();
+        }
+
         startAudio();
-        if(e.key==='ArrowLeft'||e.key==='a') keys.left=true;
-        if(e.key==='ArrowRight'||e.key==='d') keys.right=true;
-        if((e.key===' '||e.key==='ArrowUp'||e.key==='w')&&player&&player.grounded) player.vy=-22;
+        if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=true;
+        if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=true;
+        if((e.key===' '||e.key==='ArrowUp'||e.key==='w'||e.key==='W')&&player&&player.grounded) player.vy=-22;
     });
-    window.addEventListener('keydown',e=>{
-        if(e.key==='ArrowLeft'||e.key==='a') keys.left=false;
-        if(e.key==='ArrowRight'||e.key==='d') keys.right=false;
+    
+    window.addEventListener('keyup',e=>{
+        if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=false;
+        if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=false;
     });
 }
 
@@ -1148,8 +1140,8 @@ function loop(timestamp){
     }
 
     ctx.clearRect(0,0,V_WIDTH,V_HEIGHT);
-    if(gameState==='SELECT'){ drawSelectionScreen(); updateLbBtnVisibility(); updateCortisoloMeter(); }
-    else if(gameState==='LEVEL_SELECT'){ drawLevelSelectScreen(); updateLbBtnVisibility(); updateCortisoloMeter(); }
+    if(gameState==='SELECT'){ drawSelectionScreen(); updateLbBtnVisibility(); }
+    else if(gameState==='LEVEL_SELECT'){ drawLevelSelectScreen(); updateLbBtnVisibility(); }
     else if(gameState==='PLAY'){
         if (!isPaused) {
             player.update(platforms, dt);
@@ -1206,13 +1198,10 @@ function loop(timestamp){
             if(images.flagGrey&&images.flagGrey.complete&&images.flagGrey.width>0) ctx.drawImage(images.flagGrey,flag.x,flag.y,60,100);
             else{ ctx.fillStyle='#7f8c8d'; ctx.fillRect(flag.x,flag.y,60,100); ctx.fillStyle='#c0392b'; ctx.fillRect(flag.x+25,flag.y,10,100); }
         }
-        
-        updateCortisoloMeter();
     } else if(gameState==='SUBMIT'){
         ctx.textAlign='center';
         ctx.fillStyle='white'; ctx.font='bold 60px sans-serif'; ctx.fillText(activeVictoryText,V_WIDTH/2,V_HEIGHT/2-20);
         ctx.fillStyle='#f1c40f'; ctx.font='bold 40px sans-serif'; ctx.fillText(finalTimeText,V_WIDTH/2,V_HEIGHT/2+60);
-        updateCortisoloMeter();
     } else if(gameState==='END'){
         ctx.textAlign='center';
         ctx.fillStyle='white'; ctx.font='bold 60px sans-serif'; ctx.fillText(activeVictoryText,V_WIDTH/2,V_HEIGHT/2-20);
@@ -1220,7 +1209,6 @@ function loop(timestamp){
         ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='22px sans-serif';
         ctx.fillText('CLICCA DOVE VUOI PER VEDERE LA CLASSIFICA',V_WIDTH/2,V_HEIGHT/2+130);
         updateLbBtnVisibility();
-        updateCortisoloMeter();
     }
     requestAnimationFrame(loop);
 }
