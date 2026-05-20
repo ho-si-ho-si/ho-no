@@ -910,10 +910,10 @@ function drawCortisoloMeter() {
     
     let t = (clampedDist - minTrackDist) / (maxTrackDist - minTrackDist); 
     
-    let targetAngleDeg = 5 + (1 - t) * 170;
+    let targetAngleDeg = 5 + (1 - t) * 165;
     
     if (targetAngleDeg < 5) targetAngleDeg = 5;
-    if (targetAngleDeg > 175) targetAngleDeg = 175;
+    if (targetAngleDeg > 170) targetAngleDeg = 170;
     
     let angleRad = targetAngleDeg * Math.PI / 180;
 
