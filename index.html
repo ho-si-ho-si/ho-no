@@ -911,6 +911,10 @@ function drawCortisoloMeter() {
     let t = (clampedDist - minTrackDist) / (maxTrackDist - minTrackDist); 
     
     let targetAngleDeg = 175 + t * (5 - 175); 
+    
+    if (targetAngleDeg < 5) targetAngleDeg = 5;
+    if (targetAngleDeg > 175) targetAngleDeg = 175;
+
     let angleRad = targetAngleDeg * Math.PI / 180;
 
     const meterX = V_WIDTH - 150;
@@ -932,11 +936,13 @@ function drawCortisoloMeter() {
     if (images.meter && images.meter.complete && images.meter.width > 0) {
         ctx.drawImage(images.meter, meterX - mW / 2, meterY - mH, mW, mH);
     } else {
+        ctx.save();
         ctx.beginPath();
         ctx.arc(meterX, meterY, 70, Math.PI, 0, false);
         ctx.lineWidth = 15;
         ctx.strokeStyle = '#2ecc71';
         ctx.stroke();
+        ctx.restore();
     }
 
     if (images.indicator && images.indicator.complete && images.indicator.width > 0) {
@@ -961,7 +967,6 @@ function drawCortisoloMeter() {
         ctx.restore();
     }
 }
-
 function init(){
     setupInputs(); resize();
     window.addEventListener('resize',resize);
