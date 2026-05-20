@@ -17,31 +17,29 @@
         
         #ui { 
             position: absolute; 
-            top: 10px; 
-            left: 10px; 
-            right: 10px; 
+            top: 15px; 
+            left: 20px; 
+            right: 20px; 
             display: flex; 
             flex-direction: row;
             justify-content: space-between; 
             align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
             color: #fff; 
-            font-size: clamp(14px, 4vw, 22px);
+            font-size: clamp(14px, 3vw, 22px);
             font-weight: bold; 
             text-shadow: 2px 2px #000; 
             pointer-events: none; 
             display: none; 
             z-index: 10;
         }
-        .ui-group { 
+        .ui-left-group { 
             display: flex; 
-            gap: clamp(10px, 3vw, 25px);
+            gap: 30px;
+            align-items: center;
         }
         #timerDisplay {
             white-space: nowrap;
         }
-        .ui-group { display: flex; gap: 30px; }
         #deathDisplay { color: #e74c3c; }
         
         #pauseBtn {
@@ -49,7 +47,7 @@
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid rgba(255, 255, 255, 0.4);
             color: white;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             padding: 8px 16px;
             border-radius: 8px;
@@ -208,11 +206,11 @@
 
 <div id="gameContainer">
     <div id="ui">
-        <div class="ui-group">
+        <div class="ui-left-group">
             <div>LIVELLO: <span id="lvlDisplay">1</span></div>
             <div>MORTI: <span id="deathDisplay">0</span></div>
+            <div>TEMPO: <span id="timerDisplay">00:00.00</span></div>
         </div>
-        <div>TEMPO: <span id="timerDisplay">00:00.00</span></div>
         <button id="pauseBtn" onclick="togglePause()">⏸ PAUSA</button>
     </div>
     <canvas id="gameCanvas"></canvas>
@@ -626,8 +624,8 @@ const LEVELS = [
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:300,y:150,w:50,h:350},{x:300,y:650,w:50,h:100},{x:700,y:0,w:50,h:500},{x:700,y:650,w:50,h:100}], enemies:[{type:'patrol',x:450,y:650,minX:360,maxX:690},{type:'patrol',x:850,y:650,minX:760,maxX:1100}], flag:{x:1050,y:650} },
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:400,y:550,w:400,h:30}], enemies:[{type:'fireball',x:570,y:450,vx:0,vy:-5,rate:70},{type:'patrol',x:450,y:650,minX:400,maxX:750}], flag:{x:1100,y:650} },
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:250,h:50},{x:400,y:600,w:150,h:30},{x:700,y:480,w:150,h:30},{x:950,y:350,w:250,h:450}], enemies:[{type:'fireball',x:450,y:150,vx:3,vy:3,rate:100},{type:'fireball',x:750,y:100,vx:0,vy:5,rate:80}], flag:{x:1080,y:250} },
-    { playerStart:{x:1050,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:900,y:610,w:250,h:30},{x:600,y:470,w:250,h:30},{x:300,y:330,w:250,h:30},{x:0,y:210,w:250,h:30}], enemies:[{type:'fireball',x:50,y:650,vx:6,vy:0,rate:120},{type:'fireball',x:50,y:470,vx:6,vy:0,rate:130},{type:'fireball',x:50,y:250,vx:6,vy:0,rate:140}], flag:{x:80,y:110} },
-    { playerStart:{x:80,y:140}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:0,w:1200,h:40},{x:0,y:0,w:40,h:800},{x:1160,y:0,w:40,h:800},{x:40,y:260,w:950,h:40},{x:220,y:500,w:940,h:40}], enemies:[{type:'fireball',x:600,y:45,vx:0,vy:4,rate:90},{type:'fireball',x:1100,y:380,vx:-6,vy:0,rate:65},{type:'fireball',x:50,y:620,vx:5,vy:0,rate:80}], flag:{x:1080,y:650} },
+    { playerStart:{x:1050,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:900,y:610,w:250,h:30},{x:600,y:470,w:250,h:30},{x:300,y:330,w:250,h:30},{x:0,y:210,w:250,h:30}], enemies:[{type:'fireball',x:5,y:650,vx:6,vy:0,rate:120},{type:'fireball',x:5,y:470,vx:6,vy:0,rate:130},{type:'fireball',x:5,y:250,vx:6,vy:0,rate:140}], flag:{x:80,y:110} },
+    { playerStart:{x:80,y:140}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:0,w:1200,h:40},{x:0,y:0,w:40,h:800},{x:1160,y:0,w:40,h:800},{x:40,y:260,w:950,h:40},{x:220,y:500,w:940,h:40}], enemies:[{type:'fireball',x:600,y:45,vx:0,vy:4,rate:90},{type:'fireball',x:1100,y:380,vx:-6,vy:0,rate:65},{type:'fireball',x:5,y:620,vx:5,vy:0,rate:80}], flag:{x:1080,y:650} },
     { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:150,y:480,w:200,h:30},{x:850,y:480,w:200,h:30},{x:450,y:300,w:300,h:30}], enemies:[{type:'boss',x:520,y:550,w:160,h:200}], flag:{x:1080,y:380} }
 ];
 
@@ -910,19 +908,26 @@ function drawCortisoloMeter() {
     const minTrackDist = 45;
     let clampedDist = Math.max(minTrackDist, Math.min(maxTrackDist, minDistance));
     
-    let t = (clampedDist - minTrackDist) / (maxTrackDist - minTrackDist);
-    let targetAngleDeg = 5 + t * (175 - 5);
+    let t = (clampedDist - minTrackDist) / (maxTrackDist - minTrackDist); 
+    
+    let targetAngleDeg = 5 + t * (175 - 5); 
     let angleRad = targetAngleDeg * Math.PI / 180;
 
-    const meterX = V_WIDTH - 120;
-    const meterY = 110;
+    const meterX = V_WIDTH - 150;
+    const meterY = 145;
     const mW = 160;
     const mH = 80;
 
+    ctx.save();
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('CORTISOLO', meterX, meterY - 12);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText('CORTISOLO', meterX, meterY - mH - 12);
+    ctx.restore();
 
     if (images.meter && images.meter.complete && images.meter.width > 0) {
         ctx.drawImage(images.meter, meterX - mW / 2, meterY - mH, mW, mH);
@@ -938,7 +943,6 @@ function drawCortisoloMeter() {
         ctx.save();
         ctx.translate(meterX, meterY);
         ctx.rotate(angleRad);
-        
         const indW = 75;
         const indH = 24;
         ctx.drawImage(images.indicator, -indW + 10, -indH / 2, indW, indH);
