@@ -37,13 +37,53 @@
         .ui-group { 
             display: flex; 
             gap: clamp(10px, 3vw, 25px);
+            align-items: center;
         }
         #timerDisplay {
             white-space: nowrap;
         }
-        .ui-group { display: flex; gap: 30px; }
         #deathDisplay { color: #e74c3c; }
         
+        /* Cortisolo Meter Styles */
+        #cortisoloContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #cortisoloLabel {
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: #f1c40f;
+            margin-bottom: 2px;
+            text-shadow: 1px 1px #000;
+        }
+        #meterWrapper {
+            position: relative;
+            width: 100px;
+            height: 50px;
+            overflow: hidden;
+        }
+        #gaugeImg {
+            width: 100px;
+            height: 50px;
+            display: block;
+        }
+        #needleImg {
+            position: absolute;
+            width: 50px;
+            height: 16px;
+            bottom: 0px;
+            left: 50px;
+            transform-origin: 41px 8px; /* Anchor point near the circular base of the needle */
+            transform: rotate(180deg);
+            transition: transform 0.1s linear;
+        }
+
         #pauseBtn {
             pointer-events: auto;
             background: rgba(255, 255, 255, 0.2);
@@ -212,8 +252,19 @@
             <div>LIVELLO: <span id="lvlDisplay">1</span></div>
             <div>MORTI: <span id="deathDisplay">0</span></div>
         </div>
-        <div>TEMPO: <span id="timerDisplay">00:00.00</span></div>
-        <button id="pauseBtn" onclick="togglePause()">⏸ PAUSA</button>
+        
+        <div id="cortisoloContainer">
+            <div id="cortisoloLabel">CORTISOLO</div>
+            <div id="meterWrapper">
+                <img id="gaugeImg" src="cortisolo.png" alt="Gauge">
+                <img id="needleImg" src="indicator.png" alt="Needle">
+            </div>
+        </div>
+
+        <div class="ui-group">
+            <div>TEMPO: <span id="timerDisplay">00:00.00</span></div>
+            <button id="pauseBtn" onclick="togglePause()">⏸ PAUSA</button>
+        </div>
     </div>
     <canvas id="gameCanvas"></canvas>
     
@@ -853,6 +904,47 @@ class Enemy {
 
 let player, enemies=[], platforms=[], fireballs=[], flag=null;
 
+function updateCortisoloMeter() {
+    if (gameState !== 'PLAY' || !player) {
+        document.getElementById('cortisoloContainer').style.display = 'none';
+        return;
+    }
+    document.getElementById('cortisoloContainer').style.display = 'flex';
+
+    let minDistance = Infinity;
+    const pCenterX = player.x + player.w / 2;
+    const pCenterY = player.y + player.h / 2;
+
+    enemies.forEach(e => {
+        if (e.type === 'boss' && e.isDead) return;
+        if (e.type === 'fireball') return;
+        
+        const eCenterX = e.x + e.w / 2;
+        const eCenterY = e.y + e.h / 2;
+        const dist = Math.hypot(pCenterX - eCenterX, pCenterY - eCenterY);
+        if (dist < minDistance) minDistance = dist;
+    });
+
+    fireballs.forEach(fb => {
+        const dist = Math.hypot(pCenterX - fb.x, pCenterY - fb.y);
+        if (dist < minDistance) minDistance = dist;
+    });
+
+    const maxRadarDist = 400;
+    const minRadarDist = 40;
+    
+    let clampedDist = Math.max(minRadarDist, Math.min(maxRadarDist, minDistance));
+    
+    let stressFactor = 1 - ((clampedDist - minRadarDist) / (maxRadarDist - minRadarDist));
+
+    let targetAngle = 170 - (stressFactor * 160);
+
+    const needle = document.getElementById('needleImg');
+    if (needle) {
+        needle.style.transform = `rotate(${targetAngle}deg)`;
+    }
+}
+
 function loadLevel(idx){
     fireballs=[];
     if(idx>=LEVELS.length){
@@ -985,7 +1077,7 @@ function setupInputs() {
         if(e.key==='ArrowRight'||e.key==='d') keys.right=true;
         if((e.key===' '||e.key==='ArrowUp'||e.key==='w')&&player&&player.grounded) player.vy=-22;
     });
-    window.addEventListener('keyup',e=>{
+    window.addEventListener('keydown',e=>{
         if(e.key==='ArrowLeft'||e.key==='a') keys.left=false;
         if(e.key==='ArrowRight'||e.key==='d') keys.right=false;
     });
@@ -1056,8 +1148,8 @@ function loop(timestamp){
     }
 
     ctx.clearRect(0,0,V_WIDTH,V_HEIGHT);
-    if(gameState==='SELECT'){ drawSelectionScreen(); updateLbBtnVisibility(); }
-    else if(gameState==='LEVEL_SELECT'){ drawLevelSelectScreen(); updateLbBtnVisibility(); }
+    if(gameState==='SELECT'){ drawSelectionScreen(); updateLbBtnVisibility(); updateCortisoloMeter(); }
+    else if(gameState==='LEVEL_SELECT'){ drawLevelSelectScreen(); updateLbBtnVisibility(); updateCortisoloMeter(); }
     else if(gameState==='PLAY'){
         if (!isPaused) {
             player.update(platforms, dt);
@@ -1114,10 +1206,13 @@ function loop(timestamp){
             if(images.flagGrey&&images.flagGrey.complete&&images.flagGrey.width>0) ctx.drawImage(images.flagGrey,flag.x,flag.y,60,100);
             else{ ctx.fillStyle='#7f8c8d'; ctx.fillRect(flag.x,flag.y,60,100); ctx.fillStyle='#c0392b'; ctx.fillRect(flag.x+25,flag.y,10,100); }
         }
+        
+        updateCortisoloMeter();
     } else if(gameState==='SUBMIT'){
         ctx.textAlign='center';
         ctx.fillStyle='white'; ctx.font='bold 60px sans-serif'; ctx.fillText(activeVictoryText,V_WIDTH/2,V_HEIGHT/2-20);
         ctx.fillStyle='#f1c40f'; ctx.font='bold 40px sans-serif'; ctx.fillText(finalTimeText,V_WIDTH/2,V_HEIGHT/2+60);
+        updateCortisoloMeter();
     } else if(gameState==='END'){
         ctx.textAlign='center';
         ctx.fillStyle='white'; ctx.font='bold 60px sans-serif'; ctx.fillText(activeVictoryText,V_WIDTH/2,V_HEIGHT/2-20);
@@ -1125,6 +1220,7 @@ function loop(timestamp){
         ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='22px sans-serif';
         ctx.fillText('CLICCA DOVE VUOI PER VEDERE LA CLASSIFICA',V_WIDTH/2,V_HEIGHT/2+130);
         updateLbBtnVisibility();
+        updateCortisoloMeter();
     }
     requestAnimationFrame(loop);
 }
