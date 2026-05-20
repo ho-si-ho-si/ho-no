@@ -544,7 +544,8 @@ const CHARACTERS = {
 let ASSETS = {
     player: '', enemy: 'enemy.png', fireEnemy: 'fireenemy.png', flag: '',
     bossState1: 'boss_state1.png', bossState2: 'boss_state2.png', bossState3: 'boss_state3.png',
-    bossCrown: 'boss_crown.png', flagGrey: ''
+    bossCrown: 'boss_crown.png', flagGrey: '',
+    meter: 'cortisolo.png', indicator: 'indicator.png'
 };
 let activeVictoryText = "HO SI! VEDERE C!";
 let activeCharName   = "CRIGUBE";
@@ -884,6 +885,79 @@ function loadLevel(idx){
     document.getElementById('lvlDisplay').innerText=idx+1;
 }
 
+function drawCortisoloMeter() {
+    if (!player) return;
+
+    let minDistance = Infinity;
+    const pCenterX = player.x + player.w / 2;
+    const pCenterY = player.y + player.h / 2;
+
+    enemies.forEach(e => {
+        if (e.type === 'boss' && e.isDead) return;
+        if (e.type === 'fireball') return;
+        const eCenterX = e.x + e.w / 2;
+        const eCenterY = e.y + e.h / 2;
+        const dist = Math.hypot(pCenterX - eCenterX, pCenterY - eCenterY);
+        if (dist < minDistance) minDistance = dist;
+    });
+
+    fireballs.forEach(fb => {
+        const dist = Math.hypot(pCenterX - fb.x, pCenterY - fb.y);
+        if (dist < minDistance) minDistance = dist;
+    });
+
+    const maxTrackDist = 400;
+    const minTrackDist = 45;
+    let clampedDist = Math.max(minTrackDist, Math.min(maxTrackDist, minDistance));
+    
+    let t = (clampedDist - minTrackDist) / (maxTrackDist - minTrackDist);
+    let targetAngleDeg = 5 + t * (175 - 5);
+    let angleRad = targetAngleDeg * Math.PI / 180;
+
+    const meterX = V_WIDTH - 120;
+    const meterY = 110;
+    const mW = 160;
+    const mH = 80;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CORTISOLO', meterX, meterY - 12);
+
+    if (images.meter && images.meter.complete && images.meter.width > 0) {
+        ctx.drawImage(images.meter, meterX - mW / 2, meterY - mH, mW, mH);
+    } else {
+        ctx.beginPath();
+        ctx.arc(meterX, meterY, 70, Math.PI, 0, false);
+        ctx.lineWidth = 15;
+        ctx.strokeStyle = '#2ecc71';
+        ctx.stroke();
+    }
+
+    if (images.indicator && images.indicator.complete && images.indicator.width > 0) {
+        ctx.save();
+        ctx.translate(meterX, meterY);
+        ctx.rotate(angleRad);
+        
+        const indW = 75;
+        const indH = 24;
+        ctx.drawImage(images.indicator, -indW + 10, -indH / 2, indW, indH);
+        ctx.restore();
+    } else {
+        ctx.save();
+        ctx.translate(meterX, meterY);
+        ctx.rotate(angleRad);
+        ctx.beginPath();
+        ctx.moveTo(0, -4);
+        ctx.lineTo(-65, 0);
+        ctx.lineTo(0, 4);
+        ctx.closePath();
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
 function init(){
     setupInputs(); resize();
     window.addEventListener('resize',resize);
@@ -1114,6 +1188,9 @@ function loop(timestamp){
             if(images.flagGrey&&images.flagGrey.complete&&images.flagGrey.width>0) ctx.drawImage(images.flagGrey,flag.x,flag.y,60,100);
             else{ ctx.fillStyle='#7f8c8d'; ctx.fillRect(flag.x,flag.y,60,100); ctx.fillStyle='#c0392b'; ctx.fillRect(flag.x+25,flag.y,10,100); }
         }
+
+        drawCortisoloMeter();
+
     } else if(gameState==='SUBMIT'){
         ctx.textAlign='center';
         ctx.fillStyle='white'; ctx.font='bold 60px sans-serif'; ctx.fillText(activeVictoryText,V_WIDTH/2,V_HEIGHT/2-20);
