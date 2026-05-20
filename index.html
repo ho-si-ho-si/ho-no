@@ -63,7 +63,6 @@
         }
         #pauseBtn:active { background: rgba(255, 255, 255, 0.4); }
 
-        /* Responsive Indicator Container placed cleanly on the side */
         #cortisoloIndicator {
             position: relative;
             width: clamp(110px, 15vw, 160px);
@@ -99,7 +98,7 @@
             right: 50%;
             width: 45%;
             transform-origin: 100% 50%;
-            transform: rotate(0deg); /* Adjust rotation dynamically via JS (e.g., -180deg to 0deg) */
+            transform: rotate(0deg);
             transition: transform 0.2s ease-out;
         }
 
@@ -619,7 +618,6 @@ const images = {};
 const uiImages = {};
 let currentLevel = 0;
 let gameState    = 'SELECT';
-let audioStarted = false;
 let animationTimer = 0;
 let deathCount = 0;
 
@@ -850,28 +848,28 @@ class Enemy {
         }
     }
     draw(){
-    if(this.type==='boss'){
-        if(this.w>0&&this.h>0){
-            const stateImages = [images.bossState1, images.bossState2, images.bossState3];
-            const stateColors = ['#d35400', '#9b59b6', '#8e44ad'];
-            
-            let bossImg = stateImages[this.attackState];
-            let fallbackColor = stateColors[this.attackState];
-            
-            if(this.stateTimer > 160 && this.nextAttackState !== this.attackState) {
-                if(Math.floor(this.stateTimer / 10) % 2 === 0) {
-                    bossImg = stateImages[this.nextAttackState];
-                    fallbackColor = stateColors[this.nextAttackState];
-                }
-            }
-
-            if(bossImg&&bossImg.complete&&bossImg.width>0) {
-                ctx.drawImage(bossImg,this.x,this.y,this.w,this.h);
-            } else { 
-                ctx.fillStyle = fallbackColor; 
-                ctx.fillRect(this.x,this.y,this.w,this.h); 
-            }
+        if(this.type==='boss'){
+            if(this.w>0&&this.h>0){
+                const stateImages = [images.bossState1, images.bossState2, images.bossState3];
+                const stateColors = ['#d35400', '#9b59b6', '#8e44ad'];
                 
+                let bossImg = stateImages[this.attackState];
+                let fallbackColor = stateColors[this.attackState];
+                
+                if(this.stateTimer > 160 && this.nextAttackState !== this.attackState) {
+                    if(Math.floor(this.stateTimer / 10) % 2 === 0) {
+                        bossImg = stateImages[this.nextAttackState];
+                        fallbackColor = stateColors[this.nextAttackState];
+                    }
+                }
+
+                if(bossImg&&bossImg.complete&&bossImg.width>0) {
+                    ctx.drawImage(bossImg,this.x,this.y,this.w,this.h);
+                } else { 
+                    ctx.fillStyle = fallbackColor; 
+                    ctx.fillRect(this.x,this.y,this.w,this.h); 
+                }
+                    
                 if(!this.isDead){
                     let cW=this.w*(256/418), cH=cW*(197/256);
                     let cX=this.x+(this.w-cW)/2, cY=this.y-cH+(cH*0.55);
@@ -964,7 +962,6 @@ function resize(){
     ctx.setTransform(scale,0,0,scale,0,0);
 }
 
-let audioStarted=false;
 function startAudio(){
     if(!audioStarted && !isPaused){
         const music=document.getElementById('bgMusic');
