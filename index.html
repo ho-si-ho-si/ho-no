@@ -265,9 +265,9 @@
 </div>
 <script>
 
-const LOOTLOCKER_GAME_KEY        = "dev_6bc4f8539dba4e76b852ef28a00217a1";       
-const LOOTLOCKER_GAME_ID         = "105125";                                       
-const LOOTLOCKER_LEADERBOARD_KEY = "hosi_speedrun";                              
+const LOOTLOCKER_GAME_KEY        = "dev_6bc4f8539dba4e76b852ef28a00217a1";       // Game API Key
+const LOOTLOCKER_GAME_ID         = "105125";                                     // Game ID  
+const LOOTLOCKER_LEADERBOARD_KEY = "hosi_speedrun";                              // Leaderboard Key
 const LOOTLOCKER_API             = "https://api.lootlocker.io/game";
 
 let llSessionToken = null;
@@ -541,11 +541,10 @@ const CHARACTERS = {
 
 let ASSETS = {
     player: '', enemy: 'enemy.png', fireEnemy: 'fireenemy.png', flag: '',
+    bossState1: 'boss_state1.png', bossState2: 'boss_state2.png', bossState3: 'boss_state3.png',
     bossCrown: 'boss_crown.png', flagGrey: '',
-    meter: 'cortisolo.png', indicator: 'indicator.png',
-    boss2Body: 'boss2_body.png', boss2Arm: 'boss2_arm.png', boss2Head: 'boss2_head.png'
+    meter: 'cortisolo.png', indicator: 'indicator.png'
 };
-
 let activeVictoryText = "HO SI! VEDERE C!";
 let activeCharName   = "CRIGUBE";
 let activeCharPlayer = "player.png";
@@ -578,12 +577,12 @@ const selectButtons = [
 ];
 
 const levelSelectButtons = [];
-const cols = 5, startX = 240, startY = 220, btnSpacing = 145;
-for (let i = 0; i < 20; i++) {
+const cols = 5, startX = 240, startY = 320, btnSpacing = 150;
+for (let i = 0; i < 10; i++) {
     let row = Math.floor(i / cols), col = i % cols;
     levelSelectButtons.push({ levelIndex: i, x: startX + col * btnSpacing, y: startY + row * btnSpacing, w: 100, h: 100 });
 }
-const backBtnProps = { x: 475, y: 715, w: 250, h: 55 };
+const backBtnProps = { x: 475, y: 640, w: 250, h: 60 };
 
 function preloadSelectionImages(callback) {
     let loaded = 0;
@@ -626,7 +625,8 @@ const LEVELS = [
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:400,y:550,w:400,h:30}], enemies:[{type:'fireball',x:570,y:450,vx:0,vy:-5,rate:70},{type:'patrol',x:450,y:650,minX:400,maxX:750}], flag:{x:1100,y:650} },
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:250,h:50},{x:400,y:600,w:150,h:30},{x:700,y:480,w:150,h:30},{x:950,y:350,w:250,h:450}], enemies:[{type:'fireball',x:450,y:150,vx:3,vy:3,rate:100},{type:'fireball',x:750,y:100,vx:0,vy:5,rate:80}], flag:{x:1080,y:250} },
     { playerStart:{x:1050,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:900,y:610,w:250,h:30},{x:600,y:470,w:250,h:30},{x:300,y:330,w:250,h:30},{x:0,y:210,w:250,h:30}], enemies:[{type:'fireball',x:5,y:650,vx:6,vy:0,rate:120},{type:'fireball',x:5,y:470,vx:6,vy:0,rate:130},{type:'fireball',x:5,y:250,vx:6,vy:0,rate:140}], flag:{x:80,y:110} },
-    { playerStart:{x:80,y:140}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:0,w:1200,h:40},{x:0,y:0,w:40,h:800},{x:1160,y:0,w:40,h:800},{x:40,y:260,w:950,h:40},{x:220,y:500,w:940,h:40}], enemies:[{type:'fireball',x:600,y:45,vx:0,vy:4,rate:90},{type:'fireball',x:1100,y:380,vx:-6,vy:0,rate:65},{type:'fireball',x:5,y:620,vx:5,vy:0,rate:80}], flag:{x:1080,y:650} }
+    { playerStart:{x:80,y:140}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:0,w:1200,h:40},{x:0,y:0,w:40,h:800},{x:1160,y:0,w:40,h:800},{x:40,y:260,w:950,h:40},{x:220,y:500,w:940,h:40}], enemies:[{type:'fireball',x:600,y:45,vx:0,vy:4,rate:90},{type:'fireball',x:1100,y:380,vx:-6,vy:0,rate:65},{type:'fireball',x:5,y:620,vx:5,vy:0,rate:80}], flag:{x:1080,y:650} },
+    { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:150,y:480,w:200,h:30},{x:850,y:480,w:200,h:30},{x:450,y:300,w:300,h:30}], enemies:[{type:'boss',x:520,y:550,w:160,h:200}], flag:{x:1080,y:380} }
 ];
 
 class Fireball {
@@ -688,14 +688,6 @@ class Enemy {
             this.consecutiveStateCount = 1;
             this.hasRolledWarningState = false;
         }
-        /*if(this.type==='boss2'){
-            this.hp=20; this.maxHp=20; this.stateTimer=0; this.attackState=0;
-            this.isDead=false; this.deathTimer=0; this.headX=0; this.headY=0;
-            this.headVx=0; this.headVy=0; this.headAngle=0;
-            this.initialW=this.w; this.initialH=this.h;
-            this.targetX=this.x; this.targetY=this.y;
-            this.attackState = 0;
-        }*/
     }
     update(dt=1){
         if(this.type==='boss'){
@@ -787,11 +779,75 @@ class Enemy {
         } else if(this.type==='fireball'){
             this.timer+=dt;
             if(this.timer>=this.rate){ this.timer=0; fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,this.fvx,this.fvy)); }
-        } /*else if(this.type==='boss2'){
-            this.x=P_WIDTH;
-        }*/
+        }
     }
-    draw();
+    draw(){
+    if(this.type==='boss'){
+        if(this.w>0&&this.h>0){
+            const stateImages = [images.bossState1, images.bossState2, images.bossState3];
+            const stateColors = ['#d35400', '#9b59b6', '#8e44ad'];
+            
+            let bossImg = stateImages[this.attackState];
+            let fallbackColor = stateColors[this.attackState];
+            
+            if(this.stateTimer > 160 && this.nextAttackState !== this.attackState) {
+                if(Math.floor(this.stateTimer / 10) % 2 === 0) {
+                    bossImg = stateImages[this.nextAttackState];
+                    fallbackColor = stateColors[this.nextAttackState];
+                }
+            }
+
+            if(bossImg&&bossImg.complete&&bossImg.width>0) {
+                ctx.drawImage(bossImg,this.x,this.y,this.w,this.h);
+            } else { 
+                ctx.fillStyle = fallbackColor; 
+                ctx.fillRect(this.x,this.y,this.w,this.h); 
+            }
+                
+                if(!this.isDead){
+                    let cW=this.w*(256/418), cH=cW*(197/256);
+                    let cX=this.x+(this.w-cW)/2, cY=this.y-cH+(cH*0.55);
+                    if(images.bossCrown&&images.bossCrown.complete&&images.bossCrown.width>0) ctx.drawImage(images.bossCrown,cX,cY,cW,cH);
+                    else{ ctx.fillStyle='#f1c40f'; ctx.fillRect(cX,cY,cW,cH); }
+                }
+            }
+            if(this.isDead&&this.deathTimer<100){
+                ctx.save(); ctx.translate(this.crownX,this.crownY); ctx.rotate(this.crownAngle);
+                let cW=this.initialW*0.65, cH=cW*0.42;
+                if(images.bossCrown&&images.bossCrown.complete&&images.bossCrown.width>0) ctx.drawImage(images.bossCrown,-cW/2,-cH/2,cW,cH);
+                else{ ctx.fillStyle='#f1c40f'; ctx.fillRect(-cW/2,-cH/2,cW,cH); }
+                ctx.restore();
+            }
+            if(!this.isDead){
+                let hue = (animationTimer * 100) % 360;
+    
+                ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+                ctx.font = 'bold 22px sans-serif';
+                ctx.textAlign = 'center';
+                
+                ctx.save();
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                
+                ctx.fillText('RE SARCHIAPONE', 600, 45);
+                ctx.restore();
+
+                ctx.fillStyle='#c0392b'; ctx.fillRect(400,60,400,20);
+                ctx.fillStyle='#2ecc71'; ctx.fillRect(400,60,400*(this.hp/this.maxHp),20);
+                ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.strokeRect(400,60,400,20);
+            }
+            return;
+        }
+        if(this.type==='fireball'){
+            if(images.fireEnemy&&images.fireEnemy.complete&&images.fireEnemy.width>0) ctx.drawImage(images.fireEnemy,this.x,this.y,this.w,this.h);
+            else{ ctx.fillStyle='#e67e22'; ctx.fillRect(this.x,this.y,this.w,this.h); }
+            return;
+        }
+        if(images.enemy&&images.enemy.complete&&images.enemy.width>0) ctx.drawImage(images.enemy,this.x,this.y,this.w,this.h);
+        else{ ctx.fillStyle='#8B0000'; ctx.fillRect(this.x,this.y,this.w,this.h); }
+    }
 }
 
 let player, enemies=[], platforms=[], fireballs=[], flag=null;
@@ -924,6 +980,7 @@ function resize(){
     ctx.setTransform(scale,0,0,scale,0,0);
 }
 
+let audioUnlocked=false;
 function startAudio(){
     if(!audioStarted && !isPaused){
         const music=document.getElementById('bgMusic');
@@ -1063,7 +1120,7 @@ function drawLevelSelectScreen(){
     ctx.fillText('TORNA INDIETRO', backBtnProps.x + backBtnProps.w/2, backBtnProps.y + backBtnProps.h/2 + 7);
 
     ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='18px sans-serif';
-    ctx.fillText('⏱ COMINCIA DAL LIVELLO 1 PER INVIARE IL TUO TEMPO',V_WIDTH/2,765);
+    ctx.fillText('⏱ COMINCIA DAL LIVELLO 1 PER INVIARE IL TUO TEMPO',V_WIDTH/2,740);
 }
 
 let lastFrameTime = null;
@@ -1114,7 +1171,7 @@ function loop(timestamp){
                     } else player.reset(LEVELS[currentLevel].playerStart.x,LEVELS[currentLevel].playerStart.y);
                 }
             });
-            let isBossLevel=(currentLevel===14);
+            let isBossLevel=(currentLevel===9);
             let bossActive=enemies.some(e=>e.type==='boss'&&(!e.isDead||e.deathTimer<100));
             if(!bossActive||!isBossLevel){
                 if(player.x<flag.x+60&&player.x+player.w>flag.x&&player.y<flag.y+100&&player.y+player.h>flag.y){ currentLevel++; loadLevel(currentLevel); }
@@ -1126,7 +1183,7 @@ function loop(timestamp){
         platforms.forEach(p=>{ ctx.fillStyle='#34495e'; ctx.fillRect(p.x,p.y,p.w,p.h); });
         enemies.forEach(e=>e.draw()); player.draw();
         
-        let isBossLevel=(currentLevel===14);
+        let isBossLevel=(currentLevel===9);
         let bossActive=enemies.some(e=>e.type==='boss'&&(!e.isDead||e.deathTimer<100));
         if(!bossActive||!isBossLevel){
             if(images.flag&&images.flag.complete&&images.flag.width>0) ctx.drawImage(images.flag,flag.x,flag.y,60,100);
