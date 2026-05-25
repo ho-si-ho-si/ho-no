@@ -696,6 +696,14 @@ class Enemy {
             this.consecutiveStateCount = 1;
             this.hasRolledWarningState = false;
         }
+        if(this.type==='boss2'){
+            this.hp=20; this.maxHp=20; this.stateTimer=0; this.attackState=0;
+            this.isDead=false; this.deathTimer=0; this.headX=0; this.headY=0;
+            this.headVx=0; this.headVy=0; this.headAngle=0;
+            this.initialW=this.w; this.initialH=this.h;
+            this.targetX=this.x; this.targetY=this.y;
+            this.attackState = 0;
+        }
     }
     update(dt=1){
         if(this.type==='boss'){
@@ -787,109 +795,11 @@ class Enemy {
         } else if(this.type==='fireball'){
             this.timer+=dt;
             if(this.timer>=this.rate){ this.timer=0; fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,this.fvx,this.fvy)); }
+        } else if(this.type==='boss2'){
+            
         }
     }
-    draw(){
-    if(this.type==='boss'){
-        if(this.w>0&&this.h>0){
-            let hasAssets = images.boss2Body && images.boss2Body.complete && images.boss2Body.width > 0 &&
-                            images.boss2Head && images.boss2Head.complete && images.boss2Head.width > 0 &&
-                            images.boss2Arm && images.boss2Arm.complete && images.boss2Arm.width > 0;
-
-            if (hasAssets) {
-                ctx.save();
-                ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
-                
-                if (this.stateTimer > 160 && this.nextAttackState !== this.attackState) {
-                    if (Math.floor(this.stateTimer / 10) % 2 === 0) {
-                        ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
-                    }
-                }
-
-                let bodyW = this.w;
-                let bodyH = this.h;
-                ctx.drawImage(images.boss2Body, -bodyW / 2, -bodyH / 2, bodyW, bodyH);
-
-                let headW = bodyW * 0.55;
-                let headH = headW * (images.boss2Head.height / images.boss2Head.width);
-                let headX = -bodyW * 0.15;
-                let headY = -bodyH * 0.72;
-                ctx.drawImage(images.boss2Head, headX, headY, headW, headH);
-
-                ctx.save();
-                let armW = bodyW * 0.5;
-                let armH = armW * (images.boss2Arm.height / images.boss2Arm.width);
-                let armX = -bodyW * 0.05;
-                let armY = -bodyH * 0.1;
-                
-                ctx.translate(armX + armW * 0.7, armY + armH * 0.2);
-                if (this.attackState === 0) {
-                    ctx.rotate(Math.sin(animationTimer * 2) * 0.2);
-                } else if (this.attackState === 1) {
-                    ctx.rotate(Math.sin(animationTimer * 4) * 0.4);
-                } else if (this.attackState === 2) {
-                    ctx.rotate(-0.5 + Math.sin(animationTimer * 6) * 0.1);
-                }
-                ctx.drawImage(images.boss2Arm, -armW * 0.7, -armH * 0.2, armW, armH);
-                ctx.restore();
-
-                ctx.restore();
-            } else { 
-                const stateColors = ['#d35400', '#9b59b6', '#8e44ad'];
-                let fallbackColor = stateColors[this.attackState];
-                if(this.stateTimer > 160 && this.nextAttackState !== this.attackState) {
-                    if(Math.floor(this.stateTimer / 10) % 2 === 0) {
-                        fallbackColor = stateColors[this.nextAttackState];
-                    }
-                }
-                ctx.fillStyle = fallbackColor; 
-                ctx.fillRect(this.x,this.y,this.w,this.h); 
-            }
-                
-                if(!this.isDead){
-                    let cW=this.w*(256/418), cH=cW*(197/256);
-                    let cX=this.x+(this.w-cW)/2 - (hasAssets ? this.w * 0.05 : 0), cY=this.y-cH+(cH*0.55) - (hasAssets ? this.h * 0.35 : 0);
-                    if(images.bossCrown&&images.bossCrown.complete&&images.bossCrown.width>0) ctx.drawImage(images.bossCrown,cX,cY,cW,cH);
-                    else{ ctx.fillStyle='#f1c40f'; ctx.fillRect(cX,cY,cW,cH); }
-                }
-            }
-            if(this.isDead&&this.deathTimer<100){
-                ctx.save(); ctx.translate(this.crownX,this.crownY); ctx.rotate(this.crownAngle);
-                let cW=this.initialW*0.65, cH=cW*0.42;
-                if(images.bossCrown&&images.bossCrown.complete&&images.bossCrown.width>0) ctx.drawImage(images.bossCrown,-cW/2,-cH/2,cW,cH);
-                else{ ctx.fillStyle='#f1c40f'; ctx.fillRect(-cW/2,-cH/2,cW,cH); }
-                ctx.restore();
-            }
-            if(!this.isDead){
-                let hue = (animationTimer * 100) % 360;
-    
-                ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
-                ctx.font = 'bold 22px sans-serif';
-                ctx.textAlign = 'center';
-                
-                ctx.save();
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
-                
-                ctx.fillText('RE SARCHIAPONE', 600, 45);
-                ctx.restore();
-
-                ctx.fillStyle='#c0392b'; ctx.fillRect(400,60,400,20);
-                ctx.fillStyle='#2ecc71'; ctx.fillRect(400,60,400*(this.hp/this.maxHp),20);
-                ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.strokeRect(400,60,400,20);
-            }
-            return;
-        }
-        if(this.type==='fireball'){
-            if(images.fireEnemy&&images.fireEnemy.complete&&images.fireEnemy.width>0) ctx.drawImage(images.fireEnemy,this.x,this.y,this.w,this.h);
-            else{ ctx.fillStyle='#e67e22'; ctx.fillRect(this.x,this.y,this.w,this.h); }
-            return;
-        }
-        if(images.enemy&&images.enemy.complete&&images.enemy.width>0) ctx.drawImage(images.enemy,this.x,this.y,this.w,this.h);
-        else{ ctx.fillStyle='#8B0000'; ctx.fillRect(this.x,this.y,this.w,this.h); }
-    }
+    draw()
 }
 
 let player, enemies=[], platforms=[], fireballs=[], flag=null;
@@ -918,6 +828,9 @@ function loadLevel(idx){
     }
 
     currentLevel=idx;
+    if(idx>9 && idx<19){
+        idx = 1;
+    }
     const data=LEVELS[idx];
     player=new Player(data.playerStart.x, data.playerStart.y);
     platforms=data.platforms; flag=data.flag;
