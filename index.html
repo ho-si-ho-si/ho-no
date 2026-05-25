@@ -578,12 +578,12 @@ const selectButtons = [
 ];
 
 const levelSelectButtons = [];
-const cols = 5, startX = 240, startY = 240, btnSpacing = 150;
-for (let i = 0; i < 15; i++) {
+const cols = 5, startX = 240, startY = 220, btnSpacing = 145;
+for (let i = 0; i < 20; i++) {
     let row = Math.floor(i / cols), col = i % cols;
     levelSelectButtons.push({ levelIndex: i, x: startX + col * btnSpacing, y: startY + row * btnSpacing, w: 100, h: 100 });
 }
-const backBtnProps = { x: 475, y: 690, w: 250, h: 60 };
+const backBtnProps = { x: 475, y: 715, w: 250, h: 55 };
 
 function preloadSelectionImages(callback) {
     let loaded = 0;
@@ -1022,7 +1022,6 @@ function resize(){
     ctx.setTransform(scale,0,0,scale,0,0);
 }
 
-let audioStarted = false;
 function startAudio(){
     if(!audioStarted && !isPaused){
         const music=document.getElementById('bgMusic');
