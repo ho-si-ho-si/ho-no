@@ -796,10 +796,10 @@ class Enemy {
             this.timer+=dt;
             if(this.timer>=this.rate){ this.timer=0; fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,this.fvx,this.fvy)); }
         } else if(this.type==='boss2'){
-            
+            this.x=P_WIDTH;
         }
     }
-    draw()
+    draw();
 }
 
 let player, enemies=[], platforms=[], fireballs=[], flag=null;
