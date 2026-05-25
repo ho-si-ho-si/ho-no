@@ -626,15 +626,7 @@ const LEVELS = [
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:400,y:550,w:400,h:30}], enemies:[{type:'fireball',x:570,y:450,vx:0,vy:-5,rate:70},{type:'patrol',x:450,y:650,minX:400,maxX:750}], flag:{x:1100,y:650} },
     { playerStart:{x:50,y:650}, platforms:[{x:0,y:750,w:250,h:50},{x:400,y:600,w:150,h:30},{x:700,y:480,w:150,h:30},{x:950,y:350,w:250,h:450}], enemies:[{type:'fireball',x:450,y:150,vx:3,vy:3,rate:100},{type:'fireball',x:750,y:100,vx:0,vy:5,rate:80}], flag:{x:1080,y:250} },
     { playerStart:{x:1050,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:900,y:610,w:250,h:30},{x:600,y:470,w:250,h:30},{x:300,y:330,w:250,h:30},{x:0,y:210,w:250,h:30}], enemies:[{type:'fireball',x:5,y:650,vx:6,vy:0,rate:120},{type:'fireball',x:5,y:470,vx:6,vy:0,rate:130},{type:'fireball',x:5,y:250,vx:6,vy:0,rate:140}], flag:{x:80,y:110} },
-    { playerStart:{x:80,y:140}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:0,w:1200,h:40},{x:0,y:0,w:40,h:800},{x:1160,y:0,w:40,h:800},{x:40,y:260,w:950,h:40},{x:220,y:500,w:940,h:40}], enemies:[{type:'fireball',x:600,y:45,vx:0,vy:4,rate:90},{type:'fireball',x:1100,y:380,vx:-6,vy:0,rate:65},{type:'fireball',x:5,y:620,vx:5,vy:0,rate:80}], flag:{x:1080,y:650} },
-    
-    { playerStart:{x:100,y:600}, platforms:[{x:0,y:750,w:1200,h:50},{x:200,y:550,w:250,h:30},{x:750,y:550,w:250,h:30},{x:450,y:400,w:300,h:30}], enemies:[{type:'patrol',x:250,y:450,minX:200,maxX:450},{type:'patrol',x:800,y:450,minX:750,maxX:1000}], flag:{x:1080,y:650} },
-    { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:300,y:580,w:150,h:170},{x:750,y:580,w:150,h:170}], enemies:[{type:'fireball',x:375,y:500,vx:0,vy:-6,rate:85},{type:'fireball',x:825,y:500,vx:0,vy:-6,rate:85}], flag:{x:1100,y:650} },
-    { playerStart:{x:80,y:200}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:320,w:350,h:30},{x:450,y:450,w:300,h:30},{x:850,y:320,w:350,h:30}], enemies:[{type:'patrol',x:500,y:350,minX:450,maxX:750},{type:'fireball',x:600,y:50,vx:0,vy:5,rate:100}], flag:{x:1100,y:220} },
-    { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:200,y:200,w:40,h:550},{x:550,y:0,w:40,h:550},{x:900,y:200,w:40,h:550}], enemies:[{type:'patrol',x:40,y:650,minX:40,maxX:200},{type:'patrol',x:260,y:650,minX:260,maxX:550},{type:'patrol',x:610,y:650,minX:610,maxX:900},{type:'patrol',x:960,y:650,minX:960,maxX:1200}], flag:{x:1100,y:650} },
-    { playerStart:{x:100,y:150}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:250,w:1000,h:35},{x:200,y:500,w:1000,h:35}], enemies:[{type:'fireball',x:50,y:350,vx:7,vy:0,rate:75},{type:'fireball',x:1150,y:600,vx:-7,vy:0,rate:75}], flag:{x:1100,y:650} },
-
-    { playerStart:{x:100,y:650}, platforms:[{x:0,y:750,w:1200,h:50},{x:150,y:480,w:200,h:30},{x:850,y:480,w:200,h:30},{x:450,y:300,w:300,h:30}], enemies:[{type:'boss',x:520,y:550,w:160,h:200}], flag:{x:1080,y:380} }
+    { playerStart:{x:80,y:140}, platforms:[{x:0,y:750,w:1200,h:50},{x:0,y:0,w:1200,h:40},{x:0,y:0,w:40,h:800},{x:1160,y:0,w:40,h:800},{x:40,y:260,w:950,h:40},{x:220,y:500,w:940,h:40}], enemies:[{type:'fireball',x:600,y:45,vx:0,vy:4,rate:90},{type:'fireball',x:1100,y:380,vx:-6,vy:0,rate:65},{type:'fireball',x:5,y:620,vx:5,vy:0,rate:80}], flag:{x:1080,y:650} }
 ];
 
 class Fireball {
@@ -696,14 +688,14 @@ class Enemy {
             this.consecutiveStateCount = 1;
             this.hasRolledWarningState = false;
         }
-        if(this.type==='boss2'){
+        /*if(this.type==='boss2'){
             this.hp=20; this.maxHp=20; this.stateTimer=0; this.attackState=0;
             this.isDead=false; this.deathTimer=0; this.headX=0; this.headY=0;
             this.headVx=0; this.headVy=0; this.headAngle=0;
             this.initialW=this.w; this.initialH=this.h;
             this.targetX=this.x; this.targetY=this.y;
             this.attackState = 0;
-        }
+        }*/
     }
     update(dt=1){
         if(this.type==='boss'){
@@ -795,9 +787,9 @@ class Enemy {
         } else if(this.type==='fireball'){
             this.timer+=dt;
             if(this.timer>=this.rate){ this.timer=0; fireballs.push(new Fireball(this.x+this.w/2,this.y+this.h/2,this.fvx,this.fvy)); }
-        } else if(this.type==='boss2'){
+        } /*else if(this.type==='boss2'){
             this.x=P_WIDTH;
-        }
+        }*/
     }
     draw();
 }
@@ -828,9 +820,6 @@ function loadLevel(idx){
     }
 
     currentLevel=idx;
-    if(idx>9 && idx<19){
-        idx = 1;
-    }
     const data=LEVELS[idx];
     player=new Player(data.playerStart.x, data.playerStart.y);
     platforms=data.platforms; flag=data.flag;
